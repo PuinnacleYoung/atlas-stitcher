@@ -4,7 +4,9 @@
 
 ## 在线使用
 
-打开 **index.html** 即可（GitHub Pages 首页）。iPhone / iPad 用 Safari 打开后「分享 → 添加到主屏幕」，可当独立 App 用。
+**https://puinnacleyoung.github.io/atlas-stitcher/**
+
+iPhone / iPad 用 Safari 打开后「分享 → 添加到主屏幕」，可当独立 App 用。
 
 ## 能做什么
 
@@ -18,12 +20,12 @@
 
 仓库里的 `素材拼接器_离线网页版.zip`（46 KB）下载解压后双击 HTML 即用，**不联网、不安装**。
 
-需要「导出到指定目录」时用 Windows 版 exe（见分发包，未放仓库）。
+需要「导出到指定目录」时用 Windows 版 exe（14 MB，见本地分发包）。
 
 ## 隐私
 
-纯前端运行，图片不会上传到任何服务器，断网可用。
+纯前端运行，图片不会上传到任何服务器，页面加载后断网照样能用。
 
 ## 技术
 
-单个 HTML 文件，零依赖，Canvas 2D 实现。
+单个 HTML 文件，零依赖，Canvas 2D 实现；Windows exe 由 pywebview + PyInstaller 打包。
