@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>素材拼接器 · 使用教程</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1f2328; --ink2:#57606a; --ink3:#8b949e;
+  --line:#e4e7eb; --accent:#f57c00; --accent-soft:#fff4e5; --blue:#0969da;
+  --blue-soft:#e8f1ff; --green:#1a7f37; --green-soft:#e8f6ec; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei UI","PingFang SC","Segoe UI",system-ui,sans-serif;
+  line-height:1.8;font-size:15px;padding:0 0 60px}
+.wrap{max-width:960px;margin:0 auto;padding:0 22px}
+header{background:linear-gradient(135deg,#2b2b2b,#1a1a1a);color:#fff;padding:38px 0 30px;margin-bottom:28px}
+header h1{font-size:29px;font-weight:800;letter-spacing:.5px}
+header h1 span{color:#ffa726}
+header p{color:#b9b9b9;margin-top:8px;font-size:14px}
+.badges{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+.badge{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;color:#e8e8e8}
+h2{font-size:21px;font-weight:800;margin:34px 0 14px;padding-left:12px;
+  border-left:4px solid var(--accent);letter-spacing:.5px}
+h3{font-size:16px;font-weight:800;margin:20px 0 8px;color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 20px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);
+  overflow:hidden;border:1px solid var(--line);font-size:14px}
+th{background:#f0f2f5;text-align:left;padding:11px 13px;font-weight:800;font-size:13px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 13px;border-bottom:1px solid #eef0f3;vertical-align:top}
+tr:last-child td{border-bottom:none}
+td b{color:var(--accent)}
+.pick{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:8px}
+.pick .card{margin:0;border-top:3px solid var(--line)}
+.pick .card.a{border-top-color:var(--accent)}
+.pick .card.b{border-top-color:var(--blue)}
+.pick .card.c{border-top-color:var(--green)}
+.pick h4{font-size:15px;font-weight:800;margin-bottom:4px}
+.pick .tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;
+  border-radius:12px;margin-bottom:8px}
+.tag.a{background:var(--accent-soft);color:#b35c00}
+.tag.b{background:var(--blue-soft);color:var(--blue)}
+.tag.c{background:var(--green-soft);color:var(--green)}
+.pick ul{margin:8px 0 0 16px;font-size:13.5px;color:var(--ink2)}
+.steps{counter-reset:s}
+.step{display:flex;gap:14px;margin-bottom:16px;align-items:flex-start}
+.step .n{flex:0 0 30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;
+  font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+.step .t{flex:1}
+.step .t b{display:block;font-size:15px;margin-bottom:2px}
+.step .t span{color:var(--ink2);font-size:13.5px}
+kbd{background:#f0f2f5;border:1px solid #d5d9e0;border-bottom-width:2px;border-radius:5px;
+  padding:1px 7px;font-size:12.5px;font-weight:700;font-family:inherit;color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.warn{background:#fff8e6;border:1px solid #ffd591;border-radius:var(--radius);
+  padding:13px 16px;font-size:13.5px;color:#7a4b00;margin:12px 0}
+.info{background:var(--blue-soft);border:1px solid #b6d4ff;border-radius:var(--radius);
+  padding:13px 16px;font-size:13.5px;color:#0a3d7a;margin:12px 0}
+.ok{background:var(--green-soft);border:1px solid #b7e2c2;border-radius:var(--radius);
+  padding:13px 16px;font-size:13.5px;color:#12592a;margin:12px 0}
+code{background:#f0f2f5;padding:1px 6px;border-radius:4px;font-size:13px;
+  font-family:Consolas,Monaco,monospace;color:#c0392b}
+details{background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 16px;margin-bottom:10px}
+summary{font-weight:700;cursor:pointer;font-size:14.5px}
+details p{color:var(--ink2);font-size:13.5px;margin-top:8px}
+footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
+@media(max-width:820px){.pick{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🧩 素材拼接器 <span>Atlas Stitcher</span> · 使用教程</h1>
+    <p>导入 → 自动裁切 → 拖拽拼合 → 调色擦除 → 一键导出。离线可用，无需安装。</p>
+    <div class="badges">
+      <span class="badge">v1.0</span>
+      <span class="badge">Windows exe 14.5 MB</span>
+      <span class="badge">单文件 HTML 73 KB</span>
+      <span class="badge">无需联网</span>
+      <span class="badge">素材上限 1024 px</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<h2>一、什么场景用什么？</h2>
+<div class="pick">
+  <div class="card a">
+    <span class="tag a">推荐 · 主力机</span>
+    <h4>🖥 Windows exe</h4>
+    <ul>
+      <li>公司 / 家里固定电脑，天天用</li>
+      <li>需要「导出到指定目录」</li>
+      <li>需要「导出后自动打开文件夹」</li>
+      <li>独立窗口，不占浏览器标签</li>
+    </ul>
+  </div>
+  <div class="card b">
+    <span class="tag b">通用 · 免安装</span>
+    <h4>📄 单文件 HTML</h4>
+    <ul>
+      <li>没管理员权限、装不了软件</li>
+      <li>Mac / Linux / 安卓</li>
+      <li>临时借用别人电脑</li>
+      <li>完全离线也能用</li>
+    </ul>
+  </div>
+  <div class="card c">
+    <span class="tag c">手机 · 联网</span>
+    <h4>🌐 网页版</h4>
+    <ul>
+      <li>iPhone / iPad（Safari 打开即用）</li>
+      <li>随时随地、不用传文件</li>
+      <li>链接发给同事即可共享</li>
+      <li>联网才可用</li>
+    </ul>
+  </div>
+</div>
+
+<table>
+  <tr><th style="width:30%">你的情况</th><th style="width:26%">用哪个</th><th>怎么做</th></tr>
+  <tr><td>公司 Windows 电脑，经常用</td><td><b>AtlasStitcher.exe</b></td><td>解压后双击运行（首次启动约 3 秒，需系统自带 Edge / WebView2）</td></tr>
+  <tr><td>要导出到项目指定目录</td><td><b>exe</b></td><td>导出面板点「浏览…」选目录，可勾选导出后自动打开</td></tr>
+  <tr><td>Mac / Linux / 安卓</td><td><b>单文件 HTML</b></td><td>双击 <code>素材拼接器_单文件版.html</code>，用任意浏览器打开</td></tr>
+  <tr><td>iPhone / iPad</td><td><b>网页版</b></td><td>Safari 打开网页版链接 → 可直接加到主屏幕，像 App 一样用</td></tr>
+  <tr><td>完全没网 / 内网隔离</td><td><b>单文件 HTML</b> 或 <b>exe</b></td><td>两者都纯本地运行，图片不会上传到任何服务器</td></tr>
+  <tr><td>发给同事 / 分享</td><td><b>整个 zip</b> 或 <b>网页版链接</b></td><td>zip 内含全部版本；网页版只需发一个网址</td></tr>
+</table>
+
+<div class="ok">
+  <b>安全说明：</b>所有图片处理都在你自己的设备本地完成，工具不会联网上传任何素材。网页版也是纯前端页面，加载后断网照样能用。
+</div>
+
+<h2>二、快速上手（6 步）</h2>
+<div class="steps">
+  <div class="step"><div class="n">1</div><div class="t"><b>导入素材</b><span>点左上「📂 导入素材」或直接把一堆 PNG 拖进左侧虚线框（支持多选、支持整个文件夹）。</span></div></div>
+  <div class="step"><div class="n">2</div><div class="t"><b>自动裁切完成</b><span>素材会自动裁掉四周透明像素、并把最大边压到 1024 以内。卡片上标「已裁切」的就是处理过的。</span></div></div>
+  <div class="step"><div class="n">3</div><div class="t"><b>拖到画布</b><span>按住素材拖到中间画布，或双击素材直接放到画布中央。</span></div></div>
+  <div class="step"><div class="n">4</div><div class="t"><b>摆位置、旋转、拉缩放</b><span>选中后拖动移动；八个方块控制点自由拉伸（默认非等比，按住 <kbd>Shift</kbd> 等比）；顶部圆点旋转，按住 <kbd>Shift</kbd> 吸附 15°。</span></div></div>
+  <div class="step"><div class="n">5</div><div class="t"><b>擦除多余部分</b><span>按 <kbd>E</kbd> 切换橡皮擦，在图层上涂抹即可擦掉（笔刷大小用 <kbd>[</kbd> <kbd>]</kbd> 调）。擦错了 <kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销。</span></div></div>
+  <div class="step"><div class="n">6</div><div class="t"><b>调色 + 导出</b><span>右侧调不透明度 / 饱和度 / 对比度 / 亮度 / 色相偏移；最后点右上角「⬇ 导出 PNG」。</span></div></div>
+</div>
+
+<h2>三、功能速查</h2>
+<div class="grid2">
+  <div class="card">
+    <h3>📚 素材库（左）</h3>
+    <ul style="margin-left:17px;color:var(--ink2);font-size:13.5px">
+      <li>支持 PNG / JPG / WebP / BMP / GIF</li>
+      <li>自动按有效像素（Alpha）裁切，可调透明阈值</li>
+      <li>尺寸上限可选 256 / 512 / 1024 / 2048 / 4096 / 不限</li>
+      <li>卡片右上角 ✕ 单独删除；拖到画布即新建图层</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>🎨 画布（中）</h3>
+    <ul style="margin-left:17px;color:var(--ink2);font-size:13.5px">
+      <li>画布尺寸 256 ~ 8192 任意设，带常用预设</li>
+      <li>滚轮缩放，空格 / 中键拖动平移</li>
+      <li>网格、底色（棋盘 / 深灰 / 中灰 / 白）切换</li>
+      <li>点空白处取消选中</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>🗂 图层（右上）</h3>
+    <ul style="margin-left:17px;color:var(--ink2);font-size:13.5px">
+      <li>👁 显示 / 隐藏，🗑 删除，双击名可重命名</li>
+
+      <li>拖动条目调整叠放顺序，或用 ▲▼ 按钮</li>
+      <li>越靠上的条目越显示在前面</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>🎛 属性（右下）</h3>
+    <ul style="margin-left:17px;color:var(--ink2);font-size:13.5px">
+      <li>位置 X / Y、宽高百分比（可分别设 → 非等比）</li>
+      <li>旋转角度、水平 / 垂直翻转、↻90°、居中、适应画布</li>
+      <li>不透明度、饱和度、对比度、亮度、色相偏移、模糊</li>
+      <li>「重置」一键回到默认调色</li>
+    </ul>
+  </div>
+</div>
+
+<h2>四、快捷键</h2>
+<table>
+  <tr><th style="width:26%">按键</th><th>作用</th></tr>
+  <tr><td><kbd>V</kbd> / <kbd>E</kbd> / <kbd>H</kbd></td><td>选择工具 / 橡皮擦 / 平移视图</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>撤销（支持变换、调色、擦除）</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>复制当前图层</td></tr>
+  <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>打开导出面板</td></tr>
+  <tr><td><kbd>Delete</kbd></td><td>删除当前图层</td></tr>
+  <tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>减小 / 增大橡皮擦笔刷</td></tr>
+  <tr><td><kbd>Shift</kbd>+拖动控制点</td><td>等比缩放</td></tr>
+  <tr><td><kbd>Shift</kbd>+旋转</td><td>按 15° 吸附</td></tr>
+  <tr><td>方向键 / <kbd>Shift</kbd>+方向键</td><td>微调位置 1 px / 10 px</td></tr>
+  <tr><td><kbd>F</kbd></td><td>适应窗口</td></tr>
+  <tr><td>空格 + 拖动</td><td>临时平移视图</td></tr>
+</table>
+
+<h2>五、导出说明</h2>
+<div class="card">
+  <h3>exe 版</h3>
+  <p style="color:var(--ink2);font-size:13.5px">可指定任意目录；文件名留空则自动生成 <code>atlas_日期_序号.png</code>；同名文件自动加序号，<b>不会覆盖旧图</b>；可勾选导出后自动打开文件夹。</p>
+  <h3 style="margin-top:14px">单文件 HTML / 网页版</h3>
+  <p style="color:var(--ink2);font-size:13.5px">受浏览器限制，图片保存到<b>浏览器默认下载目录</b>（Chrome/Edge 可改为「每次询问保存位置」）。如需指定目录，请用 Windows exe 版。</p>
+  <div class="info" style="margin-bottom:0">导出格式固定为 <b>PNG（透明底）</b>。可勾选「裁切到内容范围」自动去掉画布四周空白，只导出有像素的区域。</div>
+</div>
+
+<h2>六、常见问题</h2>
+<details><summary>为什么 exe 首次启动要等几秒？</summary>
+<p>单文件 exe 运行时会先把内置资源解压到临时目录，一般 2~4 秒，之后就正常了。需要系统已安装 Edge 或 WebView2 运行时（Windows 10/11 基本都自带）。</p></details>
+<details><summary>透明边没裁干净 / 裁多了？</summary>
+<p>左下角「导入设置」里调「透明阈值」：数值越大，越多的半透明像素被当作透明裁掉。默认是 6，边缘有半透明羽化的素材建议调到 20~40，纯色不透明的底图可更高。</p></details>
+<details><summary>素材被缩小了？</summary>
+<p>「尺寸上限」默认 1024，超过的会等比压缩到 1024。需要更高精度就把它改成 2048 / 4096 / 不限（改完对已导入的素材无效，需重新导入）。</p></details>
+<details><summary>擦除擦错了怎么办？</summary>
+<p><kbd>Ctrl</kbd>+<kbd>Z</kbd> 逐步撤销；也可以点属性面板里的「↺ 还原擦除」一次性恢复整个图层。</p></details>
+<details><summary>iPhone 上怎么用？</summary>
+<p>用 Safari 打开网页版链接，点分享 → 「添加到主屏幕」，之后就能像 App 一样全屏打开。导入素材时会调用系统照片图库，导出会存到「下载」文件夹。</p></details>
+<details><summary>画布上东西多了会卡吗？</summary>
+<p>几十个图层基本流畅。如果卡，可以先把暂时不用的图层隐藏（👁），或把尺寸上限调低一些。</p></details>
+<details><summary>图片会被上传到网上吗？</summary>
+<p>不会。所有裁切、拼合、调色都在本地浏览器 / 本地窗口里完成，工具本身不发任何网络请求。</p></details>
+
+<h2>七、文件清单</h2>
+<table>
+  <tr><th style="width:32%">文件</th><th>说明</th></tr>
+  <tr><td><b>AtlasStitcher.exe</b></td><td>Windows 桌面版（14.5 MB），功能最全，支持指定目录导出</td></tr>
+  <tr><td><b>素材拼接器_单文件版.html</b></td><td>离线单文件（73 KB），任何系统双击用浏览器打开即用</td></tr>
+  <tr><td><b>使用教程.html</b></td><td>本文件</td></tr>
+</table>
+
+<footer>素材拼接器 Atlas Stitcher v1.0 · 本地运行 · 无联网依赖</footer>
+</div>
+</body>
+</html>
