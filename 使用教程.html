@@ -76,13 +76,14 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
 <header>
   <div class="wrap">
     <h1>🧩 素材拼接器 <span>Atlas Stitcher</span> · 使用教程</h1>
-    <p>导入 → 自动裁切 → 拖拽拼合 → 调色擦除 → 一键导出。离线可用，无需安装。</p>
+    <p>两个页签：🧩 <b>素材拼接</b>（PNG 拼合导出）· 🎬 <b>视频抠像</b>（mp4 抠绿幕 → 带透明通道的雪碧图 / 序列帧 / APNG）。离线可用，无需安装。</p>
     <div class="badges">
-      <span class="badge">v1.0</span>
+      <span class="badge">v1.1</span>
       <span class="badge">Windows exe 14.5 MB</span>
-      <span class="badge">单文件 HTML 73 KB</span>
+      <span class="badge">单文件 HTML 140 KB</span>
       <span class="badge">无需联网</span>
       <span class="badge">素材上限 1024 px</span>
+      <span class="badge">抠像输出 8 位 alpha</span>
     </div>
   </div>
 </header>
@@ -153,7 +154,56 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
   <div class="step"><div class="n">6</div><div class="t"><b>调色 + 导出</b><span>右侧调不透明度 / 饱和度 / 对比度 / 亮度 / 色相偏移；最后点右上角「⬇ 导出 PNG」。</span></div></div>
 </div>
 
-<h2>三、功能速查</h2>
+<h2>三、视频抠像（🎬 页签）</h2>
+<div class="info">
+  <b>先回答一个高频问题：带透明度的动图到底存成什么？</b><br>
+  <b>GIF 只有 1 位 alpha</b>——要么全透要么不透，边缘必然是锯齿，做特效素材不能用。
+  <b>mp4 / mov 要带 alpha 必须上 ProRes 4444 或 HEVC with alpha</b>，浏览器里根本编不出来。
+  所以这个工具给你三条真正能用的路，都在下方「输出格式」里。
+</div>
+
+<div class="steps">
+  <div class="step"><div class="n">1</div><div class="t"><b>切到 🎬 视频抠像 页签</b><span>顶部两个页签，点一下就切。左边参数、中间原片 / 结果双画面、右边输出设置。</span></div></div>
+  <div class="step"><div class="n">2</div><div class="t"><b>选视频</b><span>点「📂 选择视频」，或直接把 mp4 / mov / webm / mkv 拖进来。</span></div></div>
+  <div class="step"><div class="n">3</div><div class="t"><b>自动取背景色</b><span>载入时会自动沿画面四边取样、识别出背景色并填进「取色」。识别不准就点「🎯 自动取背景色」重取，或用「💧 吸管」在左边原片上点一下。</span></div></div>
+  <div class="step"><div class="n">4</div><div class="t"><b>调参数，看结果</b><span>中间左边是原片、右边是抠完的结果（背景是棋盘格 = 透明）。拖时间轴或按 <kbd>空格</kbd> 播放 / <kbd>←</kbd> <kbd>→</kbd> 逐帧检查。</span></div></div>
+  <div class="step"><div class="n">5</div><div class="t"><b>选格式导出</b><span>右边选输出格式 → 填名字 → 点「⬇ 开始导出」。</span></div></div>
+</div>
+
+<h3>四个参数怎么调</h3>
+<table>
+  <tr><th style="width:16%">参数</th><th style="width:30%">作用</th><th>什么时候动它</th></tr>
+  <tr><td><b>容差</b></td><td>多大色度范围内的背景被抠掉</td><td>背景没抠干净（有残绿）→ 调大；主体被吃掉一大块 → 调小</td></tr>
+  <tr><td><b>边缘羽化</b></td><td>边缘从实到透的过渡宽度</td><td>边缘太硬有锯齿 → 调大；边缘发虚有绿边 → 调小</td></tr>
+  <tr><td><b>去溢色</b></td><td>压掉主体边缘残留的绿 / 蓝反光</td><td>人物头发、半透明纱边缘还是发绿 → 调大；主体本身偏绿被压掉 → 调小</td></tr>
+  <tr><td><b>边缘收缩</b></td><td>正值瘦边、负值补边</td><td>边缘有一圈绿边壳 → 正值；主体边缘被啃掉 → 负值</td></tr>
+</table>
+
+<h3 style="margin-top:18px">输出格式怎么选</h3>
+<table>
+  <tr><th style="width:20%">格式</th><th style="width:24%">产物</th><th>用在哪</th></tr>
+  <tr><td><b>Sprite Sheet</b></td><td>一张横向 / 网格排好的 PNG</td><td><b>游戏引擎特效、粒子序列帧</b>——UE / Unity / Cocos 直接切格子用</td></tr>
+  <tr><td><b>序列帧 zip</b></td><td>一包带编号的 PNG</td><td><b>AE / PR / 剪映 后期合成</b>，或者要逐帧再加工</td></tr>
+  <tr><td><b>APNG</b></td><td>单个 .png 文件，会动</td><td><b>网页 / PPT / 文档里直接放的动图</b>，浏览器和 Safari 都能播</td></tr>
+  <tr><td><b>当前帧</b></td><td>单张 PNG</td><td>只要某一帧，或者先出一张看看效果</td></tr>
+</table>
+
+<div class="ok">
+  <b>四种都是完整 8 位 alpha 通道</b>（256 级半透明），不是 GIF 的那种 1 位锯齿边。
+  勾选「统一裁剪到内容范围」后，所有帧会按统一的包围盒裁掉四周空白，雪碧图不浪费格子。
+</div>
+
+<div class="warn">
+  <b>几个要提醒的：</b>
+  <ul style="margin:6px 0 0 18px">
+    <li>帧数 = 帧率 × 时长 ÷ 抽帧，<b>48 帧 / 640×360 大约 600 KB</b>。帧数太多时先调大「抽帧」或压低「尺寸上限」。</li>
+    <li>Sprite Sheet 单张最长边超过 8192 px 会被拒，减帧数或降尺寸即可。</li>
+    <li>浏览器只能解它自己支持的编码。<b>mp4 最好是 H.264</b>；碰到解不了的，先用格式工厂 / ffmpeg 转成 H.264 mp4 再丢进来。</li>
+    <li>视频同样全程本地处理，不会上传。</li>
+  </ul>
+</div>
+
+<h2>四、功能速查（素材拼接页签）</h2>
 <div class="grid2">
   <div class="card">
     <h3>📚 素材库（左）</h3>
@@ -193,7 +243,7 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
   </div>
 </div>
 
-<h2>四、快捷键</h2>
+<h2>五、快捷键</h2>
 <table>
   <tr><th style="width:26%">按键</th><th>作用</th></tr>
   <tr><td><kbd>V</kbd> / <kbd>E</kbd> / <kbd>H</kbd></td><td>选择工具 / 橡皮擦 / 平移视图</td></tr>
@@ -209,7 +259,7 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
   <tr><td>空格 + 拖动</td><td>临时平移视图</td></tr>
 </table>
 
-<h2>五、导出说明</h2>
+<h2>六、导出说明</h2>
 <div class="card">
   <h3>exe 版</h3>
   <p style="color:var(--ink2);font-size:13.5px">可指定任意目录；文件名留空则自动生成 <code>atlas_日期_序号.png</code>；同名文件自动加序号，<b>不会覆盖旧图</b>；可勾选导出后自动打开文件夹。</p>
@@ -218,7 +268,7 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
   <div class="info" style="margin-bottom:0">导出格式固定为 <b>PNG（透明底）</b>。可勾选「裁切到内容范围」自动去掉画布四周空白，只导出有像素的区域。</div>
 </div>
 
-<h2>六、常见问题</h2>
+<h2>七、常见问题</h2>
 <details><summary>为什么 exe 首次启动要等几秒？</summary>
 <p>单文件 exe 运行时会先把内置资源解压到临时目录，一般 2~4 秒，之后就正常了。需要系统已安装 Edge 或 WebView2 运行时（Windows 10/11 基本都自带）。</p></details>
 <details><summary>透明边没裁干净 / 裁多了？</summary>
@@ -232,17 +282,26 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
 <details><summary>画布上东西多了会卡吗？</summary>
 <p>几十个图层基本流畅。如果卡，可以先把暂时不用的图层隐藏（👁），或把尺寸上限调低一些。</p></details>
 <details><summary>图片会被上传到网上吗？</summary>
-<p>不会。所有裁切、拼合、调色都在本地浏览器 / 本地窗口里完成，工具本身不发任何网络请求。</p></details>
+<p>不会。所有裁切、拼合、调色、抠像都在本地浏览器 / 本地窗口里完成，工具本身不发任何网络请求。</p></details>
+<details><summary>视频导进来没反应 / 预览是黑的？</summary>
+<p>多半是浏览器解不了这个编码。先确认是 <b>H.264 的 mp4</b> 或 webm；如果不是，用格式工厂 / ffmpeg 转一次再导入。另外视频必须是从本地选的，不能直接拖网址。</p></details>
+<details><summary>绿幕没抠干净，还剩一层绿边？</summary>
+<p>三步走：① 点「🎯 自动取背景色」重新取一次（实拍绿幕往往不是纯 <code>#00ff00</code>）；② 把「容差」调大一点；③ 边缘还有绿边就把「去溢色」调大、「边缘收缩」给一点正值。</p></details>
+<details><summary>抠完主体也被吃掉一块？</summary>
+<p>说明容差太大，或者主体里有跟背景接近的颜色。把「容差」调小，或者用「💧 吸管」在背景上多点几个位置取个中间值。主体本身就是绿色系的话，建议换成蓝幕拍。</p></details>
+<details><summary>APNG 在某某软件里不动 / 只显示第一帧？</summary>
+<p>APNG 是标准 PNG 的扩展，浏览器、Safari、Keynote 都支持；部分老软件只认静态首帧。遇到这种情况改用「序列帧 zip」或「Sprite Sheet」即可。</p></details>
 
-<h2>七、文件清单</h2>
+<h2>八、文件清单</h2>
 <table>
   <tr><th style="width:32%">文件</th><th>说明</th></tr>
   <tr><td><b>AtlasStitcher.exe</b></td><td>Windows 桌面版（14.5 MB），功能最全，支持指定目录导出</td></tr>
   <tr><td><b>素材拼接器_单文件版.html</b></td><td>离线单文件（73 KB），任何系统双击用浏览器打开即用</td></tr>
   <tr><td><b>使用教程.html</b></td><td>本文件</td></tr>
+  <tr><td><b>源码版/index.html / app.js / chroma.js / styles.css</b></td><td>未压缩源码，<code>chroma.js</code> 是视频抠像模块</td></tr>
 </table>
 
-<footer>素材拼接器 Atlas Stitcher v1.0 · 本地运行 · 无联网依赖</footer>
+<footer>素材拼接器 Atlas Stitcher v1.1 · 本地运行 · 无联网依赖</footer>
 </div>
 </body>
 </html>
