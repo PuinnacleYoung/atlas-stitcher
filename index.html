@@ -380,6 +380,85 @@ input[type="range"]::-moz-range-thumb {
 ::-webkit-scrollbar-thumb { background: #3d3d3d; border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: #4d4d4d; }
 
+/* ==========================================================
+   页签 + 视频抠像
+   ========================================================== */
+.view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.tabs { display: flex; gap: 4px; margin-left: 10px; }
+.tab {
+    font-size: 13px; font-weight: 800; letter-spacing: .5px;
+    padding: 7px 16px; border-radius: 7px 7px 0 0;
+    background: var(--bg-3); border: 1px solid var(--line); border-bottom: none;
+    color: var(--txt-2);
+}
+.tab:hover { background: var(--bg-4); color: var(--txt-0); }
+.tab.active {
+    background: var(--accent-soft); border-color: var(--accent);
+    color: var(--accent); box-shadow: inset 0 2px 0 var(--accent);
+}
+.top-group { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.top-group .spacer { flex: 1; }
+
+/* ---------- 抠像工作区 ---------- */
+.ck-main { background: var(--bg-0); }
+.ck-panel { width: 300px; flex: 0 0 300px; }
+.ck-panel .panel-body { flex: 1; }
+.ck-stage { background: var(--bg-0); }
+
+.ck-preview {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    gap: 16px; padding: 16px; min-height: 0; overflow: hidden;
+    background: radial-gradient(circle at 50% 40%, #1e1e1e 0%, #131313 100%);
+}
+.ck-shot { display: flex; flex-direction: column; gap: 6px; max-width: 50%; min-width: 0; }
+.ck-cap {
+    font-size: 12px; font-weight: 800; color: var(--txt-1); letter-spacing: .5px;
+    display: flex; align-items: baseline; gap: 8px;
+}
+.ck-cap span { font-size: 10px; font-weight: 600; color: var(--txt-2); }
+.ck-canvas-box {
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+    background: #111;
+}
+.ck-shot canvas { display: block; max-width: 100%; max-height: calc(100vh - 220px); }
+.ck-check {
+    background: repeating-conic-gradient(#2a2a2a 0% 25%, #202020 0% 50%) 50% / 16px 16px;
+}
+.ck-black { background: #000; }
+.ck-white { background: #fff; }
+.ck-green { background: #00a000; }
+#ckOutWrap.pick, #ckRawWrap.pick .ck-canvas-box { outline: 2px solid var(--accent); }
+#ckRaw.pickable { cursor: crosshair; }
+
+.ck-status {
+    display: flex; align-items: center; gap: 12px;
+    padding: 6px 12px; flex: 0 0 auto;
+    background: var(--bg-1); border-top: 1px solid var(--line);
+    font-size: 11px; color: var(--txt-2); font-weight: 600;
+}
+.ck-status .grow { flex: 1; }
+.ck-status b { color: var(--txt-1); }
+
+.ck-color {
+    width: 46px; height: 26px; padding: 0; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--bg-0); cursor: pointer;
+}
+.ck-prog {
+    height: 8px; background: var(--bg-0); border: 1px solid var(--line);
+    border-radius: 4px; overflow: hidden;
+}
+.ck-prog-bar {
+    height: 100%; width: 0%; border-radius: 3px;
+    background: linear-gradient(90deg, #ffb74d, #f57c00);
+    transition: width .12s linear;
+}
+
+/* 抠像页签的 stage-bar 微调 */
+.ck-stage .stage-bar { flex-wrap: nowrap; }
+.ck-stage .stage-bar select { font-size: 11px; padding: 4px 6px; }
+
 </style>
 </head>
 <body>
@@ -387,208 +466,435 @@ input[type="range"]::-moz-range-thumb {
 
   <!-- ================= 顶部栏 ================= -->
   <header class="topbar">
-    <div class="brand">🧩 素材拼接器<span class="ver">v1.0</span></div>
-    <button id="btnImport" class="primary">📂 导入素材</button>
-    <button id="btnImportDir">📁 导入文件夹</button>
-    <button id="btnClearLib" class="danger">🗑 清空素材库</button>
+    <div class="brand">🧩 素材拼接器<span class="ver">v1.1</span></div>
+    <div class="tabs">
+      <button class="tab active" id="tabBtnStitch">🧩 素材拼接</button>
+      <button class="tab" id="tabBtnChroma">🎬 视频抠像</button>
+    </div>
     <div class="spacer"></div>
-    <span class="group-label">画布尺寸</span>
-    <input type="number" id="docW" value="1024" min="16" max="8192">
-    <span class="group-label">×</span>
-    <input type="number" id="docH" value="1024" min="16" max="8192">
-    <select id="docPreset">
-      <option value="">预设…</option>
-      <option value="256">256 ²</option>
-      <option value="512">512 ²</option>
-      <option value="1024">1024 ²</option>
-      <option value="2048">2048 ²</option>
-      <option value="1024x512">1024×512</option>
-      <option value="512x1024">512×1024</option>
-    </select>
-    <div class="spacer"></div>
-    <button id="btnExport" class="primary">⬇ 导出 PNG</button>
+    <div class="top-group" id="topStitch">
+      <button id="btnImport" class="primary">📂 导入素材</button>
+      <button id="btnImportDir">📁 导入文件夹</button>
+      <button id="btnClearLib" class="danger">🗑 清空素材库</button>
+      <div class="spacer"></div>
+      <span class="group-label">画布尺寸</span>
+      <input type="number" id="docW" value="1024" min="16" max="8192">
+      <span class="group-label">×</span>
+      <input type="number" id="docH" value="1024" min="16" max="8192">
+      <select id="docPreset">
+        <option value="">预设…</option>
+        <option value="256">256 ²</option>
+        <option value="512">512 ²</option>
+        <option value="1024">1024 ²</option>
+        <option value="2048">2048 ²</option>
+        <option value="1024x512">1024×512</option>
+        <option value="512x1024">512×1024</option>
+      </select>
+      <div class="spacer"></div>
+      <button id="btnExport" class="primary">⬇ 导出 PNG</button>
+    </div>
+    <div class="top-group" id="topChroma" style="display:none">
+      <button id="ckPickTop" class="primary">📂 选择视频</button>
+      <div class="spacer"></div>
+      <span class="group-label" style="color:var(--txt-2)">绿幕/蓝幕 → 带透明通道的序列帧</span>
+    </div>
   </header>
 
-  <div class="main">
+  <!-- ================= 页签 1：素材拼接 ================= -->
+  <div class="view" id="viewStitch">
+    <div class="main">
 
-    <!-- ================= 左：素材库 ================= -->
-    <aside class="panel panel-left">
-      <div class="panel-head">
-        <h3>素材库</h3>
-        <span class="count" id="libCount">0</span>
-      </div>
-      <div class="lib-drop" id="libDrop">
-        <b>拖入 PNG / 点击选择</b>
-        自动裁掉透明边 · 最大边 ≤ <span id="maxSizeTip">1024</span>
-      </div>
-      <div class="panel-body">
-        <div class="lib-grid" id="libGrid"></div>
-      </div>
-      <div class="panel-head" style="border-top:1px solid var(--line);border-bottom:none">
-        <h3>导入设置</h3>
-      </div>
-      <div style="padding:8px 10px">
-        <div class="row">
-          <label>尺寸上限</label>
-          <select id="maxSize" style="flex:1">
-            <option value="256">256 px</option>
-            <option value="512">512 px</option>
-            <option value="1024" selected>1024 px</option>
-            <option value="2048">2048 px</option>
-            <option value="4096">4096 px</option>
-            <option value="0">不限制</option>
-          </select>
+      <!-- 左：素材库 -->
+      <aside class="panel panel-left">
+        <div class="panel-head">
+          <h3>素材库</h3>
+          <span class="count" id="libCount">0</span>
         </div>
-        <div class="row">
-          <label>透明阈值</label>
-          <input type="range" id="alphaThr" min="0" max="128" value="6" style="flex:1">
-          <span class="val mini" id="alphaThrVal">6</span>
+        <div class="lib-drop" id="libDrop">
+          <b>拖入 PNG / 点击选择</b>
+          自动裁掉透明边 · 最大边 ≤ <span id="maxSizeTip">1024</span>
         </div>
-        <div class="hint">阈值以下的像素视为透明，用于计算有效像素边框（纯色底图请调高）。</div>
-      </div>
-    </aside>
-
-    <!-- ================= 中：画布 ================= -->
-    <section class="stage">
-      <div class="stage-bar">
-        <div class="tool-group">
-          <button class="tool-btn active" id="toolSelect" title="选择 / 变换 (V)">🖱</button>
-          <button class="tool-btn" id="toolErase" title="橡皮擦 (E)">🧽</button>
-          <button class="tool-btn" id="toolPan" title="平移视图 (H / 空格)">✋</button>
+        <div class="panel-body">
+          <div class="lib-grid" id="libGrid"></div>
         </div>
-        <div class="sep-v"></div>
-        <span class="group-label">笔刷</span>
-        <input type="range" id="brushSize" min="1" max="400" value="60" style="width:96px">
-        <span class="val mini" id="brushSizeVal">60</span>
-        <div class="sep-v"></div>
-        <span class="group-label">硬度</span>
-        <input type="range" id="brushHard" min="0" max="100" value="70" style="width:76px">
-        <span class="val mini" id="brushHardVal">70</span>
-        <div class="sep-v"></div>
-        <button id="btnFit">适应窗口</button>
-        <button id="btnZoom100">100%</button>
-        <button id="btnZoomOut">－</button>
-        <span class="val" id="zoomVal" style="width:48px">100%</span>
-        <button id="btnZoomIn">＋</button>
-        <div class="sep-v"></div>
-        <button id="btnGrid">网格</button>
-        <button id="btnBg">底色</button>
-        <div class="spacer" style="flex:1"></div>
-        <button id="btnDup" title="复制图层 Ctrl+D">⧉ 复制</button>
-        <button id="btnDel" class="danger" title="删除图层 Delete">🗑 删除</button>
-      </div>
-      <div class="viewport" id="viewport">
-        <canvas id="board"></canvas>
-        <div class="brush-ring" id="brushRing"></div>
-        <div class="hud" id="hud">就绪</div>
-      </div>
-    </section>
+        <div class="panel-head" style="border-top:1px solid var(--line);border-bottom:none">
+          <h3>导入设置</h3>
+        </div>
+        <div style="padding:8px 10px">
+          <div class="row">
+            <label>尺寸上限</label>
+            <select id="maxSize" style="flex:1">
+              <option value="256">256 px</option>
+              <option value="512">512 px</option>
+              <option value="1024" selected>1024 px</option>
+              <option value="2048">2048 px</option>
+              <option value="4096">4096 px</option>
+              <option value="0">不限制</option>
+            </select>
+          </div>
+          <div class="row">
+            <label>透明阈值</label>
+            <input type="range" id="alphaThr" min="0" max="128" value="6" style="flex:1">
+            <span class="val mini" id="alphaThrVal">6</span>
+          </div>
+          <div class="hint">阈值以下的像素视为透明，用于计算有效像素边框（纯色底图请调高）。</div>
+        </div>
+      </aside>
 
-    <!-- ================= 右：图层 + 属性 ================= -->
-    <aside class="panel panel-right">
-      <div class="panel-head">
-        <h3>图层</h3>
-        <span class="count" id="layerCount">0</span>
-        <button id="btnUp" style="padding:3px 7px" title="上移一层">▲</button>
-        <button id="btnDown" style="padding:3px 7px" title="下移一层">▼</button>
-      </div>
-      <div class="panel-body" style="flex:0 0 auto;max-height:246px;min-height:120px">
-        <div class="layer-list" id="layerList"></div>
-      </div>
+      <!-- 中：画布 -->
+      <section class="stage">
+        <div class="stage-bar">
+          <div class="tool-group">
+            <button class="tool-btn active" id="toolSelect" title="选择 / 变换 (V)">🖱</button>
+            <button class="tool-btn" id="toolErase" title="橡皮擦 (E)">🧽</button>
+            <button class="tool-btn" id="toolPan" title="平移视图 (H / 空格)">✋</button>
+          </div>
+          <div class="sep-v"></div>
+          <span class="group-label">笔刷</span>
+          <input type="range" id="brushSize" min="1" max="400" value="60" style="width:96px">
+          <span class="val mini" id="brushSizeVal">60</span>
+          <div class="sep-v"></div>
+          <span class="group-label">硬度</span>
+          <input type="range" id="brushHard" min="0" max="100" value="70" style="width:76px">
+          <span class="val mini" id="brushHardVal">70</span>
+          <div class="sep-v"></div>
+          <button id="btnFit">适应窗口</button>
+          <button id="btnZoom100">100%</button>
+          <button id="btnZoomOut">－</button>
+          <span class="val" id="zoomVal" style="width:48px">100%</span>
+          <button id="btnZoomIn">＋</button>
+          <div class="sep-v"></div>
+          <button id="btnGrid">网格</button>
+          <button id="btnBg">底色</button>
+          <div class="spacer" style="flex:1"></div>
+          <button id="btnDup" title="复制图层 Ctrl+D">⧉ 复制</button>
+          <button id="btnDel" class="danger" title="删除图层 Delete">🗑 删除</button>
+        </div>
+        <div class="viewport" id="viewport">
+          <canvas id="board"></canvas>
+          <div class="brush-ring" id="brushRing"></div>
+          <div class="hud" id="hud">就绪</div>
+        </div>
+      </section>
 
-      <div class="panel-head" style="border-top:1px solid var(--line)">
-        <h3>属性调节</h3>
-        <button id="btnReset" style="padding:3px 7px">重置</button>
-      </div>
-      <div class="panel-body" id="propBody">
-        <div class="empty-tip" id="propEmpty">未选中图层<br>从左侧素材库拖一个素材到画布上试试</div>
+      <!-- 右：图层 + 属性 -->
+      <aside class="panel panel-right">
+        <div class="panel-head">
+          <h3>图层</h3>
+          <span class="count" id="layerCount">0</span>
+          <button id="btnUp" style="padding:3px 7px" title="上移一层">▲</button>
+          <button id="btnDown" style="padding:3px 7px" title="下移一层">▼</button>
+        </div>
+        <div class="panel-body" style="flex:0 0 auto;max-height:246px;min-height:120px">
+          <div class="layer-list" id="layerList"></div>
+        </div>
 
-        <div id="propPanel" style="display:none">
-          <!-- 变换 -->
-          <div class="prop-sec">
-            <h4>变换</h4>
-            <div class="row two">
-              <label>X</label><input type="number" id="pX" step="1">
-              <label>Y</label><input type="number" id="pY" step="1">
+        <div class="panel-head" style="border-top:1px solid var(--line)">
+          <h3>属性调节</h3>
+          <button id="btnReset" style="padding:3px 7px">重置</button>
+        </div>
+        <div class="panel-body" id="propBody">
+          <div class="empty-tip" id="propEmpty">未选中图层<br>从左侧素材库拖一个素材到画布上试试</div>
+
+          <div id="propPanel" style="display:none">
+            <div class="prop-sec">
+              <h4>变换</h4>
+              <div class="row two">
+                <label>X</label><input type="number" id="pX" step="1">
+                <label>Y</label><input type="number" id="pY" step="1">
+              </div>
+              <div class="row two">
+                <label>W%</label><input type="number" id="pSX" step="0.5">
+                <label>H%</label><input type="number" id="pSY" step="0.5">
+              </div>
+              <div class="row">
+                <label>旋转</label>
+                <input type="range" id="pRot" min="-180" max="180" step="0.5">
+                <span class="val" id="pRotVal">0°</span>
+              </div>
+              <div class="btn-row">
+                <button id="btnFlipH">水平翻转</button>
+                <button id="btnFlipV">垂直翻转</button>
+                <button id="btnRot90">↻ 90°</button>
+              </div>
+              <div class="btn-row" style="margin-top:5px">
+                <button id="btnCenter">居中</button>
+                <button id="btnFitScale">适应画布</button>
+                <button id="btnResetT">复位变换</button>
+              </div>
             </div>
-            <div class="row two">
-              <label>W%</label><input type="number" id="pSX" step="0.5">
-              <label>H%</label><input type="number" id="pSY" step="0.5">
+
+            <div class="prop-sec">
+              <h4>颜色调节</h4>
+              <div class="row">
+                <label>不透明度</label>
+                <input type="range" id="pOpa" min="0" max="100">
+                <span class="val" id="pOpaVal">100%</span>
+              </div>
+              <div class="row">
+                <label>饱和度</label>
+                <input type="range" id="pSat" min="0" max="300">
+                <span class="val" id="pSatVal">100%</span>
+              </div>
+              <div class="row">
+                <label>对比度</label>
+                <input type="range" id="pCon" min="0" max="300">
+                <span class="val" id="pConVal">100%</span>
+              </div>
+              <div class="row">
+                <label>亮度</label>
+                <input type="range" id="pBri" min="0" max="300">
+                <span class="val" id="pBriVal">100%</span>
+              </div>
+              <div class="row">
+                <label>色相偏移</label>
+                <input type="range" id="pHue" min="-180" max="180">
+                <span class="val" id="pHueVal">0°</span>
+              </div>
+              <div class="row">
+                <label>模糊</label>
+                <input type="range" id="pBlur" min="0" max="40" step="0.5">
+                <span class="val" id="pBlurVal">0px</span>
+              </div>
             </div>
-            <div class="row">
-              <label>旋转</label>
-              <input type="range" id="pRot" min="-180" max="180" step="0.5">
-              <span class="val" id="pRotVal">0°</span>
-            </div>
-            <div class="btn-row">
-              <button id="btnFlipH">水平翻转</button>
-              <button id="btnFlipV">垂直翻转</button>
-              <button id="btnRot90">↻ 90°</button>
-            </div>
-            <div class="btn-row" style="margin-top:5px">
-              <button id="btnCenter">居中</button>
-              <button id="btnFitScale">适应画布</button>
-              <button id="btnResetT">复位变换</button>
+
+            <div class="prop-sec">
+              <h4>擦除</h4>
+              <div class="btn-row">
+                <button id="btnEraseMode">🧽 擦除该图层</button>
+                <button id="btnRestore">↺ 还原擦除</button>
+              </div>
+              <div class="hint" style="margin-top:6px">擦除为像素级修改，可用 Ctrl+Z 撤销、也可随时「还原擦除」。</div>
             </div>
           </div>
-
-          <!-- 颜色 -->
-          <div class="prop-sec">
-            <h4>颜色调节</h4>
-            <div class="row">
-              <label>不透明度</label>
-              <input type="range" id="pOpa" min="0" max="100">
-              <span class="val" id="pOpaVal">100%</span>
-            </div>
-            <div class="row">
-              <label>饱和度</label>
-              <input type="range" id="pSat" min="0" max="300">
-              <span class="val" id="pSatVal">100%</span>
-            </div>
-            <div class="row">
-              <label>对比度</label>
-              <input type="range" id="pCon" min="0" max="300">
-              <span class="val" id="pConVal">100%</span>
-            </div>
-            <div class="row">
-              <label>亮度</label>
-              <input type="range" id="pBri" min="0" max="300">
-              <span class="val" id="pBriVal">100%</span>
-            </div>
-            <div class="row">
-              <label>色相偏移</label>
-              <input type="range" id="pHue" min="-180" max="180">
-              <span class="val" id="pHueVal">0°</span>
-            </div>
-            <div class="row">
-              <label>模糊</label>
-              <input type="range" id="pBlur" min="0" max="40" step="0.5">
-              <span class="val" id="pBlurVal">0px</span>
-            </div>
-          </div>
-
-          <!-- 擦除 -->
-          <div class="prop-sec">
-            <h4>擦除</h4>
-            <div class="btn-row">
-              <button id="btnEraseMode">🧽 擦除该图层</button>
-              <button id="btnRestore">↺ 还原擦除</button>
-            </div>
-            <div class="hint" style="margin-top:6px">擦除为像素级修改，可用 Ctrl+Z 撤销、也可随时「还原擦除」。</div>
-          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </div>
+
+    <footer class="statusbar">
+      <span class="st-item">画布 <b id="stDoc">1024 × 1024</b></span>
+      <span class="st-item">图层 <b id="stLayers">0</b></span>
+      <span class="st-item">素材 <b id="stAssets">0</b></span>
+      <span class="grow"></span>
+      <span class="st-item" id="stTip">V 选择 · E 擦除 · H 平移 · 空格拖动 · Delete 删除 · Ctrl+Z 撤销</span>
+    </footer>
   </div>
 
-  <!-- ================= 状态栏 ================= -->
-  <footer class="statusbar">
-    <span class="st-item">画布 <b id="stDoc">1024 × 1024</b></span>
-    <span class="st-item">图层 <b id="stLayers">0</b></span>
-    <span class="st-item">素材 <b id="stAssets">0</b></span>
-    <span class="grow"></span>
-    <span class="st-item" id="stTip">V 选择 · E 擦除 · H 平移 · 空格拖动 · Delete 删除 · Ctrl+Z 撤销</span>
-  </footer>
+  <!-- ================= 页签 2：视频抠像 ================= -->
+  <div class="view" id="viewChroma" style="display:none">
+    <div class="main ck-main">
+
+      <!-- 左：抠像参数 -->
+      <aside class="panel panel-left ck-panel">
+        <div class="panel-head"><h3>抠像参数</h3></div>
+        <div class="panel-body">
+
+          <div class="prop-sec">
+            <h4>背景色（键控色）</h4>
+            <div class="row">
+              <label>取色</label>
+              <input type="color" id="ckKey" value="#00ff00" class="ck-color">
+              <button id="ckEyedrop" style="flex:1">💧 吸管取色</button>
+            </div>
+            <div class="btn-row">
+              <button id="ckPresetG">绿幕</button>
+              <button id="ckPresetB">蓝幕</button>
+              <button id="ckPresetM">品红</button>
+            </div>
+            <div class="btn-row" style="margin-top:6px">
+              <button id="ckAutoBtn" class="primary">🎯 自动取背景色</button>
+            </div>
+            <label class="ck-check" style="margin-top:6px">
+              <input type="checkbox" id="ckAutoKey" checked> 载入视频时自动识别背景色
+            </label>
+            <div class="hint" style="margin-top:6px">
+              沿画面四边取样自动识别纯色背景；也可用「吸管」在中间原片上点一下手动取色。
+              实拍绿幕很少是纯 <code>#00ff00</code>，自动取色能一次抠干净。
+            </div>
+          </div>
+
+          <div class="prop-sec">
+            <h4>键控</h4>
+            <div class="row">
+              <label>容差</label>
+              <input type="range" id="ckTol" min="1" max="100" value="35">
+              <span class="val" id="ckTolVal">35</span>
+            </div>
+            <div class="row">
+              <label>边缘羽化</label>
+              <input type="range" id="ckFeather" min="0" max="100" value="22">
+              <span class="val" id="ckFeatherVal">22</span>
+            </div>
+            <div class="row">
+              <label>去溢色</label>
+              <input type="range" id="ckDespill" min="0" max="100" value="65">
+              <span class="val" id="ckDespillVal">65</span>
+            </div>
+            <div class="row">
+              <label>边缘收缩</label>
+              <input type="range" id="ckErode" min="-50" max="50" value="0">
+              <span class="val" id="ckErodeVal">0</span>
+            </div>
+            <div class="hint">
+              <b>容差</b> 决定多大范围的背景被抠掉；<b>羽化</b> 控制边缘过渡软硬；
+              <b>去溢色</b> 压掉边缘残留的绿/蓝边；<b>收缩</b> 正值瘦边、负值补边。
+            </div>
+          </div>
+
+          <div class="prop-sec">
+            <h4>帧设置</h4>
+            <div class="row">
+              <label>尺寸上限</label>
+              <select id="ckCap" style="flex:1">
+                <option value="256">256 px</option>
+                <option value="512">512 px</option>
+                <option value="1024" selected>1024 px</option>
+                <option value="2048">2048 px</option>
+                <option value="0">原始尺寸</option>
+              </select>
+            </div>
+            <div class="row two">
+              <label>帧率</label><input type="number" id="ckFps" value="24" min="1" max="120">
+              <label>抽帧</label><input type="number" id="ckStep" value="1" min="1" max="30">
+            </div>
+            <div class="row two">
+              <label>起始</label><input type="number" id="ckStart" value="0" min="0" step="0.1">
+              <label>结束</label><input type="number" id="ckEnd" value="0" min="0" step="0.1">
+            </div>
+            <div class="hint">「抽帧 2」= 每隔一帧取一帧；起止时间单位为秒，留 0 表示到片尾。</div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- 中：预览 -->
+      <section class="stage ck-stage">
+        <div class="stage-bar">
+          <button id="ckPick" class="primary">📂 选择视频</button>
+          <div class="sep-v"></div>
+          <button id="ckPlay">▶ 播放</button>
+          <button id="ckPrevF" title="上一帧">◀</button>
+          <button id="ckNextF" title="下一帧">▶</button>
+          <input type="range" id="ckTime" min="0" max="1" step="0.001" value="0" style="flex:1;min-width:80px">
+          <span class="val" id="ckTimeVal" style="width:52px">0.00s</span>
+          <div class="sep-v"></div>
+          <span class="group-label">显示</span>
+          <select id="ckViewMode">
+            <option value="keyed">抠像结果</option>
+            <option value="mask">Alpha 蒙版</option>
+            <option value="raw">原片</option>
+          </select>
+          <select id="ckBgMode">
+            <option value="check">棋盘底</option>
+            <option value="black">黑底</option>
+            <option value="white">白底</option>
+            <option value="green">绿底</option>
+          </select>
+        </div>
+
+        <div class="ck-preview" id="ckEmpty">
+          <div class="lib-drop" id="ckDrop" style="max-width:460px;padding:28px 20px">
+            <b>🎬 拖入视频 / 点击选择</b>
+            支持 mp4 · mov · webm<br>
+            自动色度抠像 → 输出带完整透明通道的序列
+          </div>
+        </div>
+
+        <div class="ck-preview" id="ckBody" style="display:none">
+          <div class="ck-shot" id="ckRawWrap">
+            <div class="ck-cap">原片<span>点击可取背景色</span></div>
+            <div class="ck-canvas-box"><canvas id="ckRaw"></canvas></div>
+          </div>
+          <div class="ck-shot" id="ckOutWrap">
+            <div class="ck-cap">抠像结果<span>透明区域显示为底纹</span></div>
+            <div class="ck-canvas-box ck-check"><canvas id="ckOut"></canvas></div>
+          </div>
+        </div>
+
+        <div class="ck-status">
+          <span id="ckInfo">未加载视频</span>
+          <span class="grow"></span>
+          <span id="ckFrames">— 帧</span>
+        </div>
+      </section>
+
+      <!-- 右：输出 -->
+      <aside class="panel panel-right ck-panel">
+        <div class="panel-head"><h3>输出</h3></div>
+        <div class="panel-body">
+
+          <div class="prop-sec">
+            <h4>格式</h4>
+            <select id="ckFormat" style="width:100%;margin-bottom:8px">
+              <option value="sheet">Sprite Sheet 雪碧图（PNG）</option>
+              <option value="seq">序列帧 PNG（zip 打包）</option>
+              <option value="apng">APNG 动图（单文件）</option>
+              <option value="frame">仅当前帧 PNG</option>
+            </select>
+            <div id="ckOptSheet">
+              <div class="row two">
+                <label>列数</label><input type="number" id="ckCols" value="0" min="0" title="0 = 自动">
+                <label>间距</label><input type="number" id="ckPad" value="0" min="0">
+              </div>
+              <div class="hint">列数填 <b>0</b> 自动排成接近正方形。</div>
+            </div>
+            <div id="ckOptApng" style="display:none">
+              <div class="row two">
+                <label>帧延迟</label><input type="number" id="ckDelay" value="0" min="0" title="0 = 跟随帧率">
+                <label>循环</label><input type="number" id="ckLoop" value="0" min="0">
+              </div>
+              <div class="hint">延迟单位 ms，<b>0</b> 自动按帧率；循环 <b>0</b> = 无限。</div>
+            </div>
+            <div class="hint" style="margin-top:8px">
+              <b>怎么选？</b><br>
+              · 引擎特效 / 粒子 → <b>雪碧图</b><br>
+              · 后期 AE / PR → <b>序列帧</b><br>
+              · 网页 / PPT / 单文件动图 → <b>APNG</b><br>
+              ⚠ GIF 只支持 1-bit 透明（边缘锯齿）故不提供；MP4 容器本身不带 alpha。
+            </div>
+          </div>
+
+          <div class="prop-sec">
+            <h4>裁切与命名</h4>
+            <label class="chk" style="margin-bottom:8px">
+              <input type="checkbox" id="ckTrim" checked> 自动裁到内容范围（全序列统一）
+            </label>
+            <div class="field">
+              <label>文件名</label>
+              <input type="text" id="ckName" placeholder="留空 = 用视频名">
+            </div>
+            <div class="field" id="ckDirField">
+              <label>导出目录</label>
+              <div class="flex-in">
+                <input type="text" id="ckDir" placeholder="选目录 / 粘贴路径">
+                <button id="ckPickDir">浏览…</button>
+              </div>
+            </div>
+            <label class="chk" id="ckOpenWrap"><input type="checkbox" id="ckOpen" checked> 导出后打开文件夹</label>
+          </div>
+
+          <div class="prop-sec">
+            <h4>执行</h4>
+            <button id="ckRun" class="primary" style="width:100%;padding:9px;font-size:13px" disabled>开始抠像并导出</button>
+            <button id="ckCancel" style="width:100%;margin-top:6px" disabled>取消</button>
+            <button id="ckToLib" style="width:100%;margin-top:6px">当前帧 → 素材库</button>
+            <div id="ckProgWrap" style="display:none;margin-top:10px">
+              <div class="ck-prog"><div class="ck-prog-bar" id="ckProgBar"></div></div>
+              <div class="hint" id="ckProgTxt" style="margin-top:5px"></div>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+
+    <footer class="statusbar">
+      <span class="st-item">视频 <b id="ckStName">未加载</b></span>
+      <span class="st-item">输出 <b id="ckStSize">—</b></span>
+      <span class="grow"></span>
+      <span class="st-item" id="ckStTip">空格 播放/暂停 · ← → 逐帧</span>
+    </footer>
+  </div>
 </div>
 
 <!-- ================= 导出弹窗 ================= -->
@@ -632,6 +938,8 @@ input[type="range"]::-moz-range-thumb {
 
 <input type="file" id="filePicker" accept="image/png,image/*" multiple style="display:none">
 <input type="file" id="dirPicker" webkitdirectory multiple style="display:none">
+<input type="file" id="ckFile" accept="video/*" style="display:none">
+<video id="ckVideo" playsinline muted style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px"></video>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1853,6 +2161,10 @@ function applyLocalMode() {
     $('dirField').style.display = S.local ? '' : 'none';
     $('localTip').style.display = S.local ? 'none' : 'block';
     $('expOpen').parentElement.style.display = S.local ? '' : 'none';
+    // 抠像页签（可能尚未加载 chroma.js）
+    const cdf = $('ckDirField'), cow = $('ckOpenWrap');
+    if (cdf) cdf.style.display = S.local ? '' : 'none';
+    if (cow) cow.style.display = S.local ? '' : 'none';
     if (!S.local) document.title = '素材拼接器 · 网页版';
 }
 function detectLocal() {
@@ -1880,6 +2192,931 @@ renderProps();
 resizeBoard();
 setTimeout(fitView, 60);
 hud('就绪 · 拖入 PNG 开始');
+
+</script>
+<script>
+/* ==========================================================
+   视频抠像（色度键控 Chroma Key）模块
+   依赖 app.js 的全局： $ / mkCanvas / toast / hud / S / addAsset / savePng
+   输出：Sprite Sheet PNG / 序列帧 PNG(zip) / APNG
+   ========================================================== */
+'use strict';
+
+(function () {
+
+    /* ==========================================================
+       1. 基础编码工具：CRC32 / ZIP / PNG / APNG
+       ========================================================== */
+    let _crcT = null;
+    function crcTable() {
+        if (_crcT) return _crcT;
+        _crcT = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) {
+            let c = n;
+            for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            _crcT[n] = c >>> 0;
+        }
+        return _crcT;
+    }
+    function crc32(u8) {
+        const t = crcTable();
+        let c = 0xFFFFFFFF;
+        for (let i = 0; i < u8.length; i++) c = t[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+        return (c ^ 0xFFFFFFFF) >>> 0;
+    }
+    function concatU8(list) {
+        let n = 0;
+        for (const a of list) n += a.length;
+        const r = new Uint8Array(n);
+        let p = 0;
+        for (const a of list) { r.set(a, p); p += a.length; }
+        return r;
+    }
+
+    /* ---------- ZIP（stored，PNG 已压缩故无需再压） ---------- */
+    function zipStore(files) {
+        const enc = new TextEncoder();
+        const d = new Date();
+        const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+        const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+        const locals = [], centrals = [];
+        let offset = 0;
+        for (const f of files) {
+            const nm = enc.encode(f.name);
+            const crc = crc32(f.data);
+            const lh = new Uint8Array(30 + nm.length);
+            const lv = new DataView(lh.buffer);
+            lv.setUint32(0, 0x04034b50, true);
+            lv.setUint16(4, 20, true);
+            lv.setUint16(6, 0x0800, true);   // UTF-8 文件名
+            lv.setUint16(8, 0, true);        // stored
+            lv.setUint16(10, dosTime, true);
+            lv.setUint16(12, dosDate, true);
+            lv.setUint32(14, crc, true);
+            lv.setUint32(18, f.data.length, true);
+            lv.setUint32(22, f.data.length, true);
+            lv.setUint16(26, nm.length, true);
+            lv.setUint16(28, 0, true);
+            lh.set(nm, 30);
+            locals.push(lh, f.data);
+
+            const cd = new Uint8Array(46 + nm.length);
+            const cv = new DataView(cd.buffer);
+            cv.setUint32(0, 0x02014b50, true);
+            cv.setUint16(4, 20, true);
+            cv.setUint16(6, 20, true);
+            cv.setUint16(8, 0x0800, true);
+            cv.setUint16(10, 0, true);
+            cv.setUint16(12, dosTime, true);
+            cv.setUint16(14, dosDate, true);
+            cv.setUint32(16, crc, true);
+            cv.setUint32(20, f.data.length, true);
+            cv.setUint32(24, f.data.length, true);
+            cv.setUint16(28, nm.length, true);
+            cv.setUint16(30, 0, true);
+            cv.setUint16(32, 0, true);
+            cv.setUint16(34, 0, true);
+            cv.setUint16(36, 0, true);
+            cv.setUint32(38, 0, true);
+            cv.setUint32(42, offset, true);
+            cd.set(nm, 46);
+            centrals.push(cd);
+            offset += lh.length + f.data.length;
+        }
+        const cdSize = centrals.reduce((a, b) => a + b.length, 0);
+        const eo = new Uint8Array(22);
+        const ev = new DataView(eo.buffer);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(8, files.length, true);
+        ev.setUint16(10, files.length, true);
+        ev.setUint32(12, cdSize, true);
+        ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
+        return new Blob([...locals, ...centrals, eo], { type: 'application/zip' });
+    }
+
+    /* ---------- PNG chunk ---------- */
+    const PNG_SIG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+    function pngChunk(type, data) {
+        const out = new Uint8Array(12 + data.length);
+        const dv = new DataView(out.buffer);
+        dv.setUint32(0, data.length);
+        for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+        out.set(data, 8);
+        dv.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+        return out;
+    }
+    function pngParse(u8) {
+        const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+        const o = { ihdr: null, anc: [], idat: [] };
+        let p = 8;
+        while (p + 12 <= u8.length) {
+            const len = dv.getUint32(p);
+            const type = String.fromCharCode(u8[p + 4], u8[p + 5], u8[p + 6], u8[p + 7]);
+            if (type === 'IEND') break;
+            if (type === 'IHDR') o.ihdr = u8.slice(p + 8, p + 8 + len);
+            else if (type === 'IDAT') o.idat.push(u8.slice(p + 8, p + 8 + len));
+            else if (type !== 'acTL' && type !== 'fcTL' && type !== 'fdAT') o.anc.push(u8.slice(p, p + 12 + len));
+            p += 12 + len;
+        }
+        return o;
+    }
+    function canvasPngBytes(canvas) {
+        return new Promise((res, rej) => canvas.toBlob(b => {
+            if (!b) { rej(new Error('PNG 编码失败')); return; }
+            b.arrayBuffer().then(ab => res(new Uint8Array(ab)));
+        }, 'image/png'));
+    }
+    function delayFrac(ms) {
+        let num = Math.max(1, Math.round(ms)), den = 1000;
+        const gcd = (a, b) => b ? gcd(b, a % b) : a;
+        const g = gcd(num, den) || 1;
+        num = Math.round(num / g); den = Math.round(den / g);
+        while (num > 65535) { num = Math.round(num / 10); den = Math.round(den / 10); }
+        if (den > 65535 || den < 1) { num = 1; den = 1000; }
+        return [num, den];
+    }
+
+    /* ---------- APNG 编码 ---------- */
+    async function encodeAPNG(frames, plays) {
+        const w = frames[0].canvas.width, h = frames[0].canvas.height;
+        const first = pngParse(await canvasPngBytes(frames[0].canvas));
+        const parts = [PNG_SIG];
+        parts.push(pngChunk('IHDR', first.ihdr));
+        for (const a of first.anc) parts.push(a);
+
+        const actl = new Uint8Array(8);
+        const av = new DataView(actl.buffer);
+        av.setUint32(0, frames.length);
+        av.setUint32(4, plays || 0);
+        parts.push(pngChunk('acTL', actl));
+
+        const fctl = (seqNo, ms) => {
+            const b = new Uint8Array(26);
+            const v = new DataView(b.buffer);
+            const dn = delayFrac(ms);
+            v.setUint32(0, seqNo);
+            v.setUint32(4, w); v.setUint32(8, h);
+            v.setUint32(12, 0); v.setUint32(16, 0);
+            v.setUint16(20, dn[0]); v.setUint16(22, dn[1]);
+            b[24] = 0; b[25] = 0;   // dispose=NONE, blend=SOURCE
+            return pngChunk('fcTL', b);
+        };
+
+        let seq = 0;
+        parts.push(fctl(seq++, frames[0].delay));
+        parts.push(pngChunk('IDAT', concatU8(first.idat)));
+        for (let i = 1; i < frames.length; i++) {
+            const pi = pngParse(await canvasPngBytes(frames[i].canvas));
+            parts.push(fctl(seq++, frames[i].delay));
+            const idat = concatU8(pi.idat);
+            const fdat = new Uint8Array(4 + idat.length);
+            new DataView(fdat.buffer).setUint32(0, seq++);
+            fdat.set(idat, 4);
+            parts.push(pngChunk('fdAT', fdat));
+        }
+        parts.push(pngChunk('IEND', new Uint8Array(0)));
+        return new Blob(parts, { type: 'image/png' });
+    }
+
+    /* ==========================================================
+       2. 抠像核心
+       ========================================================== */
+    /* YCbCr 色度距离 + smoothstep alpha + unmix 背景色 + 去溢色 */
+    function keyImageData(id, key, opt) {
+        const d = id.data;
+        const kr = key[0], kg = key[1], kb = key[2];
+        const kCb = -0.168736 * kr - 0.331264 * kg + 0.5 * kb;
+        const kCr = 0.5 * kr - 0.418688 * kg - 0.081312 * kb;
+        const lo = opt.tol * 0.7;                       // 容差 → 色度距离下界
+        const hi = lo + opt.feather * 0.6 + 0.5;        // 羽化 → 过渡带宽
+        const inv = 1 / (hi - lo);
+        const despill = opt.despill / 100;
+        const er = opt.erode / 200;
+        const n = d.length;
+        for (let p = 0; p < n; p += 4) {
+            const r = d[p], g = d[p + 1], b = d[p + 2];
+            const dx = (-0.168736 * r - 0.331264 * g + 0.5 * b) - kCb;
+            const dy = (0.5 * r - 0.418688 * g - 0.081312 * b) - kCr;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            let t = (dist - lo) * inv;
+            t = t < 0 ? 0 : (t > 1 ? 1 : t);
+            t = t * t * (3 - 2 * t);                     // smoothstep，边缘更自然
+            let a = t;
+            if (er > 0) { a = (a - er) / (1 - er); if (a < 0) a = 0; }
+            else if (er < 0) { a = a * (1 - er); if (a > 1) a = 1; }
+
+            let R = r, G = g, B = b;
+            if (a > 0.02 && a < 0.999) {                 // 反解前景色，去掉背景染色
+                const ia = 1 / a;
+                R = (r - (1 - a) * kr) * ia;
+                G = (g - (1 - a) * kg) * ia;
+                B = (b - (1 - a) * kb) * ia;
+            }
+            if (despill > 0) {                            // 去溢色：压掉残留的绿
+                const sp = G - (R + B) * 0.5;
+                if (sp > 0) G -= sp * despill;
+            }
+            d[p] = R; d[p + 1] = G; d[p + 2] = B; d[p + 3] = a * 255;
+        }
+        return id;
+    }
+
+    function alphaBounds(id, thr) {
+        const d = id.data, w = id.width, h = id.height;
+        let minX = w, minY = h, maxX = -1, maxY = -1;
+        for (let y = 0; y < h; y++) {
+            const row = y * w * 4;
+            for (let x = 0; x < w; x++) {
+                if (d[row + (x << 2) + 3] > thr) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+        if (maxX < 0) return null;
+        return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+    }
+
+    /* ==========================================================
+       3. 状态与 DOM
+       ========================================================== */
+    const CK = {
+        file: null, url: null, name: '',
+        vw: 0, vh: 0, dur: 0,
+        ow: 0, oh: 0,                 // 输出（工作）尺寸
+        raw: null, out: null,         // 原帧 canvas / 结果 canvas
+        curT: 0, playing: false,
+        key: [0, 255, 0],
+        viewMode: 'keyed',            // keyed | mask | raw
+        busy: false, cancel: false,
+        picking: false,
+        lastFrameCanvas: null
+    };
+
+    const vid = $('ckVideo');
+    const rawC = $('ckRaw'), outC = $('ckOut');
+
+    function outSize() {
+        const vw = CK.vw || 16, vh = CK.vh || 16;
+        const cap = parseInt($('ckCap').value, 10) || 0;
+        if (!cap) return { w: vw, h: vh };
+        const s = Math.min(cap / vw, cap / vh, 1);
+        return { w: Math.max(1, Math.round(vw * s)), h: Math.max(1, Math.round(vh * s)) };
+    }
+    function readOpt() {
+        return {
+            tol: +$('ckTol').value,
+            feather: +$('ckFeather').value,
+            despill: +$('ckDespill').value,
+            erode: +$('ckErode').value
+        };
+    }
+    function readKey() {
+        const hex = $('ckKey').value;
+        return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    }
+    function toHex(rgb) {
+        return '#' + rgb.map(v => ('0' + Math.max(0, Math.min(255, Math.round(v))).toString(16)).slice(-2)).join('');
+    }
+    function setKey(rgb) {
+        $('ckKey').value = toHex(rgb);
+        CK.key = rgb;
+    }
+
+    /* ----------------------------------------------------------
+       自动识别背景色：沿画面四边取 12 个小块，逐通道取中位数。
+       中位数能容忍部分小块被主体遮挡；只有色度足够（非灰）才采纳。
+       ---------------------------------------------------------- */
+    function sampleEdgeColor() {
+        const w = CK.ow, h = CK.oh;
+        if (!w || !h) return null;
+        const rx = CK.raw.getContext('2d');
+        const s = Math.max(4, Math.min(20, Math.round(Math.min(w, h) * 0.035)));
+        const spots = [];
+        const N = 3;                                   // 每条边取 3 个点
+        for (let i = 0; i < N; i++) {
+            const f = (i + 0.5) / N;
+            spots.push([Math.round((w - s) * f), 0]);                  // 上
+            spots.push([Math.round((w - s) * f), h - s]);              // 下
+            spots.push([0, Math.round((h - s) * f)]);                  // 左
+            spots.push([w - s, Math.round((h - s) * f)]);              // 右
+        }
+        const rs = [], gs = [], bs = [];
+        for (const [sx, sy] of spots) {
+            let d;
+            try { d = rx.getImageData(sx, sy, s, s).data; } catch (e) { return null; }
+            let r = 0, g = 0, b = 0, n = 0;
+            for (let p = 0; p < d.length; p += 4) { r += d[p]; g += d[p + 1]; b += d[p + 2]; n++; }
+            rs.push(r / n); gs.push(g / n); bs.push(b / n);
+        }
+        const med = a => { a = a.slice().sort((x, y) => x - y); return a[a.length >> 1]; };
+        const rgb = [med(rs), med(gs), med(bs)];
+        const chroma = Math.max(rgb[0], rgb[1], rgb[2]) - Math.min(rgb[0], rgb[1], rgb[2]);
+        if (chroma < 18) return null;                  // 灰底不自动判定，交给用户
+        return rgb;
+    }
+
+    function autoKey(silent) {
+        const c = sampleEdgeColor();
+        if (!c) {
+            if (!silent) toast('没识别到纯色背景（画面边缘偏灰），请手动取色', 3000);
+            return false;
+        }
+        setKey(c);
+        if (!silent) toast('已取背景色 ' + toHex(c), 1600);
+        return true;
+    }
+
+    /* 等到浏览器真的提交了一帧画面（requestVideoFrameCallback 最可靠） */
+    function nextFrame(timeout) {
+        return new Promise(res => {
+            if (!vid.requestVideoFrameCallback) { setTimeout(res, 60); return; }
+            let done = false;
+            const fin = () => { if (!done) { done = true; res(); } };
+            try { vid.requestVideoFrameCallback(fin); } catch (e) { }
+            setTimeout(fin, timeout || 1200);
+        });
+    }
+
+    async function seekTo(t) {
+        const target = Math.max(0, Math.min(t, Math.max(0, (CK.dur || 0) - 0.001)));
+        // 已经在目标时间点：浏览器不会再触发 seeked，必须立刻放行，
+        // 否则首帧预览要白等兜底超时。
+        if (vid.readyState >= 2 && Math.abs(vid.currentTime - target) < 0.005) {
+            await nextFrame(600);
+            return;
+        }
+        await new Promise(res => {
+            let done = false, timer = 0;
+            const fin = () => {
+                if (done) return;
+                done = true;
+                clearTimeout(timer);
+                vid.removeEventListener('seeked', fin);
+                vid.removeEventListener('loadeddata', fin);
+                res();
+            };
+            timer = setTimeout(fin, 4000);
+            vid.addEventListener('seeked', fin);
+            vid.addEventListener('loadeddata', fin);
+            try { vid.currentTime = target; } catch (e) { }
+        });
+        await nextFrame(800);
+    }
+
+    /* 抓一帧到 raw canvas */
+    function grabFrame() {
+        const c = CK.raw;
+        const x = c.getContext('2d', { willReadFrequently: true });
+        x.clearRect(0, 0, c.width, c.height);
+        x.drawImage(vid, 0, 0, c.width, c.height);
+        return x;
+    }
+
+    /* 某些环境（无 GPU / 无头）里，视频即使 readyState=4 也不吐帧，
+       必须先真的播放一下才会解码出画面。这里「点一下播放再暂停」强制解码。 */
+    let primed = false;
+    async function primeOnce(force) {
+        if (primed && !force) return;
+        primed = true;
+        try { await vid.play(); } catch (e) { }
+        await nextFrame(1200);
+        await new Promise(r => setTimeout(r, 80));
+        try { vid.pause(); } catch (e) { }
+    }
+    async function ensurePrimed() { return primeOnce(false); }
+
+    /* 判断画布是否整片透明（没抓到画面） */
+    function isBlank(x, w, h) {
+        try {
+            const d = x.getImageData(0, 0, w, h).data;
+            for (let p = 3; p < d.length; p += 4 * 97) if (d[p] > 0) return false;
+        } catch (e) { return false; }
+        return true;
+    }
+
+    /* 重算当前预览 */
+    async function renderPreview() {
+        if (!CK.file) return;
+        grabFrame();
+        const w = CK.ow, h = CK.oh;
+        const rx = CK.raw.getContext('2d', { willReadFrequently: true });
+        if (isBlank(rx, w, h)) {          // 没抓到画面 → 强制解码后重试
+            for (let i = 0; i < 4; i++) {
+                await primeOnce(true);
+                await seekTo(CK.curT);
+                grabFrame();
+                if (!isBlank(rx, w, h)) break;
+            }
+        }
+        let id;
+        try {
+            id = rx.getImageData(0, 0, w, h);
+        } catch (e) {
+            $('ckInfo').textContent = '⚠ 浏览器拒绝读取视频像素（跨域限制），请用 exe 版或网页版';
+            return;
+        }
+        keyImageData(id, readKey(), readOpt());
+        const ox = CK.out.getContext('2d');
+        ox.clearRect(0, 0, w, h);
+        if (CK.viewMode === 'mask') {
+            const m = new ImageData(new Uint8ClampedArray(id.data.length), w, h);
+            for (let p = 0; p < id.data.length; p += 4) {
+                const a = id.data[p + 3];
+                m.data[p] = a; m.data[p + 1] = a; m.data[p + 2] = a; m.data[p + 3] = 255;
+            }
+            ox.putImageData(m, 0, 0);
+        } else if (CK.viewMode === 'raw') {
+            ox.drawImage(CK.raw, 0, 0);
+        } else {
+            ox.putImageData(id, 0, 0);
+        }
+        /* 同步到页面上真正可见的两块画布（此前只设了尺寸、没画，预览一直是空的） */
+        const r2 = rawC.getContext('2d');
+        r2.clearRect(0, 0, w, h);
+        r2.drawImage(CK.raw, 0, 0);
+        const o2 = outC.getContext('2d');
+        o2.clearRect(0, 0, w, h);
+        o2.drawImage(CK.out, 0, 0);
+    }
+
+    let pvTimer = 0;
+    function schedulePreview(delay) {
+        clearTimeout(pvTimer);
+        pvTimer = setTimeout(renderPreview, delay === undefined ? 90 : delay);
+    }
+
+    /* ==========================================================
+       4. 视频加载
+       ========================================================== */
+    async function loadVideo(file) {
+        if (!/^video\//i.test(file.type) && !/\.(mp4|mov|webm|mkv|avi|m4v)$/i.test(file.name)) {
+            toast('请选择视频文件（mp4 / mov / webm）'); return;
+        }
+        if (CK.url) URL.revokeObjectURL(CK.url);
+        CK.url = URL.createObjectURL(file);
+        CK.file = file;
+        CK.name = file.name.replace(/\.[^.]+$/, '');
+        stopPlay();
+
+        vid.src = CK.url;
+        vid.muted = true;
+        vid.loop = false;
+        try {
+            await new Promise((res, rej) => {
+                vid.onloadedmetadata = () => res();
+                vid.onerror = () => rej(new Error('浏览器无法解码该视频（编码格式不支持）'));
+                setTimeout(() => rej(new Error('视频加载超时')), 15000);
+            });
+        } catch (e) {
+            toast(e.message, 3200);
+            $('ckInfo').innerHTML = '<span style="color:#ef5350">' + e.message + '</span>';
+            return;
+        }
+        CK.vw = vid.videoWidth; CK.vh = vid.videoHeight;
+        CK.dur = isFinite(vid.duration) ? vid.duration : 0;
+
+        resizeWork();
+        CK.curT = 0;
+        $('ckTime').max = CK.dur.toFixed(3);
+        $('ckTime').value = 0;
+        $('ckStart').value = 0;
+        $('ckEnd').value = CK.dur.toFixed(2);
+        $('ckTimeVal').textContent = '0.00s';
+        $('ckInfo').innerHTML = '原始：<b>' + CK.vw + '×' + CK.vh + '</b> · 时长 <b>' + CK.dur.toFixed(2) + 's</b> · ' +
+            '<b>' + file.name + '</b>';
+        $('ckEmpty').style.display = 'none';
+        $('ckBody').style.display = '';
+        $('ckRun').disabled = false;
+        $('ckStName').textContent = file.name;
+
+        await ensurePrimed();
+        await seekTo(0);
+        grabFrame();
+        if ($('ckAutoKey').checked) autoKey(true);
+        updateFrameCount();
+        await renderPreview();
+    }
+
+    function resizeWork() {
+        const s = outSize();
+        CK.ow = s.w; CK.oh = s.h;
+        if (!CK.raw) { CK.raw = mkCanvas(s.w, s.h); CK.out = mkCanvas(s.w, s.h); }
+        else { CK.raw.width = s.w; CK.raw.height = s.h; CK.out.width = s.w; CK.out.height = s.h; }
+        rawC.width = s.w; rawC.height = s.h;
+        outC.width = s.w; outC.height = s.h;
+        $('ckStSize').textContent = s.w + ' × ' + s.h;
+    }
+
+    function frameList() {
+        const fps = Math.max(1, Math.min(120, +$('ckFps').value || 24));
+        const step = Math.max(1, Math.round(+$('ckStep').value || 1));
+        let t0 = +$('ckStart').value || 0;
+        let t1 = +$('ckEnd').value || CK.dur;
+        if (t1 <= t0) t1 = CK.dur;
+        t0 = Math.max(0, Math.min(t0, CK.dur));
+        t1 = Math.max(t0 + 0.001, Math.min(t1, CK.dur));
+        const dt = (1 / fps) * step;
+        const out = [];
+        for (let t = t0; t < t1 - 1e-6; t += dt) out.push(t);
+        if (!out.length) out.push(t0);
+        return { times: out, delay: 1000 / fps * step };
+    }
+    function updateFrameCount() {
+        const f = frameList();
+        $('ckFrames').textContent = f.times.length + ' 帧 · ' + (f.delay).toFixed(1) + ' ms/帧';
+        return f;
+    }
+
+    function stopPlay() {
+        CK.playing = false;
+        try { vid.pause(); } catch (e) { }
+        $('ckPlay').textContent = '▶ 播放';
+    }
+
+    /* ==========================================================
+       5. 导出
+       ========================================================== */
+    function setProg(p, txt) {
+        $('ckProgWrap').style.display = 'block';
+        $('ckProgBar').style.width = Math.round(p * 100) + '%';
+        $('ckProgTxt').textContent = txt || '';
+    }
+    const yieldUI = () => new Promise(r => setTimeout(r, 0));
+
+    async function runExport() {
+        if (CK.busy) return;
+        if (!CK.file) { toast('请先选择视频'); return; }
+        const fmt = $('ckFormat').value;
+        const trim = $('ckTrim').checked;
+        const list = frameList();
+        const times = list.times;
+        const delay = list.delay;
+        const cap = parseInt($('ckCap').value, 10) || 0;
+
+        await ensurePrimed();
+
+        CK.busy = true; CK.cancel = false;
+        $('ckRun').disabled = true;
+        $('ckRun').textContent = '处理中…';
+        $('ckCancel').disabled = false;
+
+        const key = readKey(), opt = readOpt();
+        let box = null;
+
+        try {
+            /* ---- 阶段一：统一包围盒（可选） ---- */
+            if (trim) {
+                let minX = 1e9, minY = 1e9, maxX = -1, maxY = -1;
+                for (let i = 0; i < times.length; i++) {
+                    if (CK.cancel) throw new Error('__cancel__');
+                    await seekTo(times[i]);
+                    grabFrame();
+                    const id = CK.raw.getContext('2d').getImageData(0, 0, CK.ow, CK.oh);
+                    keyImageData(id, key, opt);
+                    const b = alphaBounds(id, 8);
+                    if (b) {
+                        if (b.x < minX) minX = b.x;
+                        if (b.y < minY) minY = b.y;
+                        if (b.x + b.w > maxX) maxX = b.x + b.w;
+                        if (b.y + b.h > maxY) maxY = b.y + b.h;
+                    }
+                    setProg((i + 1) / times.length * 0.45, '扫描内容范围 ' + (i + 1) + '/' + times.length);
+                    await yieldUI();
+                }
+                if (maxX < 0) { toast('抠像后没有任何内容，请调整参数'); throw new Error('__empty__'); }
+                box = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+            }
+            const ow = box ? box.w : CK.ow;
+            const oh = box ? box.h : CK.oh;
+
+            /* ---- 阶段二：输出 ---- */
+            let blob = null, ext = '.png', fname = '';
+            let nm = $('ckName').value.trim();
+            if (!nm) nm = CK.name || 'chroma';
+
+            if (fmt === 'sheet') {
+                /* Sprite Sheet */
+                let cols = Math.round(+$('ckCols').value || 0);
+                const pad = Math.max(0, Math.round(+$('ckPad').value || 0));
+                const cellW = ow + pad, cellH = oh + pad;
+                const LIMIT = 8192;
+                if (!cols) cols = Math.max(1, Math.ceil(Math.sqrt(times.length)));
+                cols = Math.max(1, Math.min(cols, times.length, Math.floor((LIMIT + pad) / cellW) || 1));
+                const rows = Math.ceil(times.length / cols);
+                if (rows * cellH - pad > LIMIT) throw new Error('帧数太多 / 单帧太大，Sprite Sheet 超过 8192px 上限。请降低帧数或尺寸上限。');
+                const sheet = mkCanvas(cols * cellW - pad, rows * cellH - pad);
+                const sx = sheet.getContext('2d');
+                for (let i = 0; i < times.length; i++) {
+                    if (CK.cancel) throw new Error('__cancel__');
+                    await seekTo(times[i]);
+                    grabFrame();
+                    const id = CK.raw.getContext('2d').getImageData(0, 0, CK.ow, CK.oh);
+                    keyImageData(id, key, opt);
+                    CK.out.getContext('2d').putImageData(id, 0, 0);
+                    const cx = (i % cols) * cellW, cy = Math.floor(i / cols) * cellH;
+                    if (box) sx.drawImage(CK.out, box.x, box.y, box.w, box.h, cx, cy, ow, oh);
+                    else sx.drawImage(CK.out, cx, cy);
+                    setProg(0.45 + (i + 1) / times.length * 0.5, '生成雪碧图 ' + (i + 1) + '/' + times.length);
+                    await yieldUI();
+                }
+                blob = await new Promise(r => sheet.toBlob(r, 'image/png'));
+                ext = '.png';
+                fname = nm + '_sheet_' + cols + 'x' + rows + ext;
+                CK.lastFrameCanvas = sheet;
+
+            } else if (fmt === 'seq') {
+                /* 序列帧 PNG → zip */
+                const files = [];
+                const digits = Math.max(3, String(times.length).length);
+                for (let i = 0; i < times.length; i++) {
+                    if (CK.cancel) throw new Error('__cancel__');
+                    await seekTo(times[i]);
+                    grabFrame();
+                    const id = CK.raw.getContext('2d').getImageData(0, 0, CK.ow, CK.oh);
+                    keyImageData(id, key, opt);
+                    let src = CK.out;
+                    if (box) {
+                        const cc = mkCanvas(ow, oh);
+                        CK.out.getContext('2d').putImageData(id, 0, 0);
+                        cc.getContext('2d').drawImage(CK.out, box.x, box.y, box.w, box.h, 0, 0, ow, oh);
+                        src = cc;
+                    } else {
+                        CK.out.getContext('2d').putImageData(id, 0, 0);
+                    }
+                    const bytes = await canvasPngBytes(src);
+                    files.push({ name: nm + '_' + String(i).padStart(digits, '0') + '.png', data: bytes });
+                    setProg(0.45 + (i + 1) / times.length * 0.5, '编码第 ' + (i + 1) + '/' + times.length + ' 帧');
+                    await yieldUI();
+                }
+                blob = zipStore(files);
+                ext = '.zip';
+                fname = nm + '_序列帧' + ext;
+
+            } else if (fmt === 'apng') {
+                /* APNG */
+                const frames = [];
+                for (let i = 0; i < times.length; i++) {
+                    if (CK.cancel) throw new Error('__cancel__');
+                    await seekTo(times[i]);
+                    grabFrame();
+                    const id = CK.raw.getContext('2d').getImageData(0, 0, CK.ow, CK.oh);
+                    keyImageData(id, key, opt);
+                    const cc = mkCanvas(ow, oh);
+                    CK.out.getContext('2d').putImageData(id, 0, 0);
+                    if (box) cc.getContext('2d').drawImage(CK.out, box.x, box.y, box.w, box.h, 0, 0, ow, oh);
+                    else cc.getContext('2d').drawImage(CK.out, 0, 0);
+                    frames.push({ canvas: cc, delay: Math.max(1, +$('ckDelay').value || delay) });
+                    setProg(0.45 + (i + 1) / times.length * 0.5, '编码第 ' + (i + 1) + '/' + times.length + ' 帧');
+                    await yieldUI();
+                }
+                blob = await encodeAPNG(frames, Math.max(0, Math.round(+$('ckLoop').value || 0)));
+                ext = '.png';
+                fname = nm + '_apng' + ext;
+
+            } else {
+                /* 当前帧 */
+                await seekTo(CK.curT);
+                grabFrame();
+                const id = CK.raw.getContext('2d').getImageData(0, 0, CK.ow, CK.oh);
+                keyImageData(id, key, opt);
+                const cc = mkCanvas(ow, oh);
+                CK.out.getContext('2d').putImageData(id, 0, 0);
+                if (box) cc.getContext('2d').drawImage(CK.out, box.x, box.y, box.w, box.h, 0, 0, ow, oh);
+                else cc.getContext('2d').drawImage(CK.out, 0, 0);
+                blob = await new Promise(r => cc.toBlob(r, 'image/png'));
+                ext = '.png';
+                fname = nm + '_frame' + ext;
+                CK.lastFrameCanvas = cc;
+            }
+
+            /* ---- 保存 ---- */
+            setProg(1, '写入文件…');
+            const dir = $('ckDir').value.trim();
+            const r = await savePng(blob, fname, dir || S.lastDir, $('ckOpen').checked);
+            if (r.ok) {
+                toast('已导出：' + r.path, 3600);
+                hud('抠像导出成功 → ' + r.path);
+                setProg(1, '完成：' + r.path);
+            }
+        } catch (e) {
+            if (e.message === '__cancel__') { toast('已取消'); setProg(0, '已取消'); }
+            else if (e.message === '__empty__') { setProg(0, '抠像结果为空'); }
+            else { alert('抠像导出失败：' + e.message); setProg(0, '失败'); }
+        }
+
+        CK.busy = false;
+        $('ckRun').disabled = false;
+        $('ckRun').textContent = '开始抠像并导出';
+        $('ckCancel').disabled = true;
+    }
+
+    /* ==========================================================
+       6. UI 绑定
+       ========================================================== */
+    function bindRange(id, valId, fmt, after) {
+        const el = $(id);
+        const upd = () => { $(valId).textContent = fmt(el.value); };
+        el.addEventListener('input', () => { upd(); if (after) after(); });
+        upd();
+    }
+
+    function init() {
+        $('ckPick').onclick = () => $('ckFile').click();
+        $('ckFile').onchange = e => {
+            if (e.target.files && e.target.files[0]) loadVideo(e.target.files[0]);
+            e.target.value = '';
+        };
+
+        /* 拖放 */
+        const dz = $('ckDrop');
+        ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => {
+            e.preventDefault(); dz.classList.add('hot');
+        }));
+        ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
+            e.preventDefault(); dz.classList.remove('hot');
+        }));
+        dz.addEventListener('drop', e => {
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) loadVideo(e.dataTransfer.files[0]);
+        });
+        dz.onclick = () => $('ckFile').click();
+
+        /* 参数 */
+        bindRange('ckTol', 'ckTolVal', v => v, () => schedulePreview());
+        bindRange('ckFeather', 'ckFeatherVal', v => v, () => schedulePreview());
+        bindRange('ckDespill', 'ckDespillVal', v => v, () => schedulePreview());
+        bindRange('ckErode', 'ckErodeVal', v => (v > 0 ? '+' : '') + v, () => schedulePreview());
+        $('ckKey').addEventListener('input', () => schedulePreview());
+
+        $('ckPresetG').onclick = () => { $('ckKey').value = '#00ff00'; schedulePreview(0); };
+        $('ckPresetB').onclick = () => { $('ckKey').value = '#0000ff'; schedulePreview(0); };
+        $('ckPresetM').onclick = () => { $('ckKey').value = '#ff00ff'; schedulePreview(0); };
+
+        /* 自动取背景色 */
+        $('ckAutoBtn').onclick = () => {
+            if (!CK.file) { toast('请先选择视频'); return; }
+            grabFrame();
+            if (autoKey(false)) renderPreview();
+        };
+        $('ckKey').addEventListener('input', () => { CK.key = readKey(); });
+
+        /* 吸管 */
+        $('ckEyedrop').onclick = () => {
+            CK.picking = !CK.picking;
+            $('ckEyedrop').classList.toggle('active', CK.picking);
+            rawC.style.cursor = CK.picking ? 'crosshair' : '';
+            $('ckRawWrap').classList.toggle('pick', CK.picking);
+        };
+        rawC.addEventListener('click', e => {
+            if (!CK.picking) return;
+            const r = rawC.getBoundingClientRect();
+            const x = Math.floor((e.clientX - r.left) / r.width * rawC.width);
+            const y = Math.floor((e.clientY - r.top) / r.height * rawC.height);
+            if (x < 0 || y < 0 || x >= rawC.width || y >= rawC.height) return;
+            try {
+                const d = CK.raw.getContext('2d').getImageData(x, y, 1, 1).data;
+                const hex = '#' + [d[0], d[1], d[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+                $('ckKey').value = hex;
+                CK.picking = false;
+                $('ckEyedrop').classList.remove('active');
+                rawC.style.cursor = '';
+                $('ckRawWrap').classList.remove('pick');
+                renderPreview();
+                toast('已取背景色 ' + hex);
+            } catch (err) { toast('无法读取该像素'); }
+        });
+
+        /* 视图模式 */
+        $('ckViewMode').onchange = () => { CK.viewMode = $('ckViewMode').value; renderPreview(); };
+        $('ckBgMode').onchange = () => {
+            const v = $('ckBgMode').value;
+            const el = $('ckOutWrap');
+            el.className = 'ck-view ' + (v === 'check' ? 'ck-check' : v === 'white' ? 'ck-white' : v === 'black' ? 'ck-black' : 'ck-green');
+        };
+
+        /* 播放 / 时间轴 */
+        $('ckPlay').onclick = () => {
+            if (CK.playing) { stopPlay(); return; }
+            CK.playing = true;
+            $('ckPlay').textContent = '⏸ 暂停';
+            vid.currentTime = CK.curT;
+            vid.play();
+            const loop = () => {
+                if (!CK.playing) return;
+                renderPreview();
+                CK.curT = vid.currentTime;
+                $('ckTime').value = CK.curT;
+                $('ckTimeVal').textContent = CK.curT.toFixed(2) + 's';
+                if (vid.ended || vid.currentTime >= (CK.dur - 0.02)) { stopPlay(); return; }
+                requestAnimationFrame(loop);
+            };
+            requestAnimationFrame(loop);
+        };
+        $('ckTime').addEventListener('input', e => {
+            CK.curT = +e.target.value;
+            $('ckTimeVal').textContent = CK.curT.toFixed(2) + 's';
+            stopPlay();
+            schedulePreview(30);
+        });
+        $('ckPrevF').onclick = () => stepFrame(-1);
+        $('ckNextF').onclick = () => stepFrame(1);
+        function stepFrame(d) {
+            stopPlay();
+            const fps = Math.max(1, +$('ckFps').value || 24);
+            CK.curT = Math.max(0, Math.min(CK.dur, CK.curT + d / fps));
+            $('ckTime').value = CK.curT;
+            $('ckTimeVal').textContent = CK.curT.toFixed(2) + 's';
+            schedulePreview(10);
+        }
+
+        /* 输出参数 */
+        $('ckCap').onchange = () => { if (CK.file) { resizeWork(); renderPreview(); } };
+        ['ckFps', 'ckStart', 'ckEnd', 'ckStep'].forEach(id => {
+            $(id).addEventListener('change', () => { if (CK.file) updateFrameCount(); });
+        });
+        $('ckFormat').onchange = () => {
+            const v = $('ckFormat').value;
+            $('ckOptSheet').style.display = v === 'sheet' ? '' : 'none';
+            $('ckOptApng').style.display = v === 'apng' ? '' : 'none';
+        };
+
+        /* 当前帧加入素材库 */
+        $('ckToLib').onclick = () => {
+            if (!CK.file) { toast('请先选择视频'); return; }
+            renderPreview();
+            const tmp = mkCanvas(CK.ow, CK.oh);
+            tmp.getContext('2d').drawImage(CK.out, 0, 0);
+            addAsset(CK.name + '_' + CK.curT.toFixed(2) + 's', tmp);
+            toast('当前帧已加入素材库');
+        };
+
+        /* 导出 / 取消 */
+        $('ckRun').onclick = runExport;
+        $('ckCancel').onclick = () => { CK.cancel = true; };
+        $('ckPickTop').onclick = () => $('ckFile').click();
+
+        /* 目录（exe 模式） */
+        $('ckPickDir').onclick = async () => {
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.pick_folder) {
+                    const d = await window.pywebview.api.pick_folder();
+                    if (d) { $('ckDir').value = d; S.lastDir = d; try { localStorage.setItem('as_lastDir', d); } catch (e) { } return; }
+                }
+            } catch (e) { }
+            $('ckDir').focus();
+            toast('请手动输入完整目录路径');
+        };
+
+        /* 页签切换 */
+        function switchTab(which) {
+            const isChroma = which === 'chroma';
+            $('viewStitch').style.display = isChroma ? 'none' : '';
+            $('viewChroma').style.display = isChroma ? '' : 'none';
+            $('topStitch').style.display = isChroma ? 'none' : '';
+            $('topChroma').style.display = isChroma ? '' : 'none';
+            $('tabBtnStitch').classList.toggle('active', !isChroma);
+            $('tabBtnChroma').classList.toggle('active', isChroma);
+            if (isChroma) {
+                document.title = '视频抠像 · Atlas Stitcher';
+                if (CK.file) renderPreview();
+            } else {
+                document.title = '素材拼接器 · Atlas Stitcher';
+                stopPlay();
+                resizeBoard();
+                render();
+            }
+        }
+        $('tabBtnStitch').onclick = () => switchTab('stitch');
+        $('tabBtnChroma').onclick = () => switchTab('chroma');
+
+        /* 快捷键：抠像页签下空格播放、左右逐帧 */
+        window.addEventListener('keydown', e => {
+            if ($('viewChroma').style.display === 'none') return;
+            const t = e.target.tagName;
+            if (t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA') return;
+            if (e.code === 'Space') { e.preventDefault(); $('ckPlay').click(); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); stepFrame(-1); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); stepFrame(1); }
+        });
+
+        $('ckFormat').dispatchEvent(new Event('change'));
+    }
+
+    /* 对外入口 */
+    window.ChromaKey = {
+        _debug: {
+            CK: CK, keyImageData: keyImageData, zipStore: zipStore,
+            encodeAPNG: encodeAPNG, alphaBounds: alphaBounds, crc32: crc32
+        }
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+
+})();
 
 </script>
 </body>
