@@ -30,6 +30,10 @@ iPhone / iPad 用 Safari 打开后「分享 → 添加到主屏幕」，可当�
   - 序列帧 zip — AE / PR 后期合成
   - APNG — 网页 / PPT 里直接放的动图
   - 当前帧 PNG — 单张取帧
+- **Sprite Sheet 坐标表**（导出时可选）：图集只是一张长图，引擎靠这张表切帧，不用手数格子
+  - 等分网格 JSON — 自研最小格式（约 300 B），帧坐标用公式算，适合自己写 Canvas
+  - TexturePacker JSON — Phaser / PixiJS / Cocos / Unity 通用的标准格式
+- **帧率快捷预设**：30 / 24 / 15 / 12 / 8 fps 一键设定；页游与网页逐帧动效常用 8–12 fps
 
 > 浏览器里编不出带 alpha 的 mp4（需要 ProRes 4444 / HEVC with alpha 编码器），
 > GIF 又只有 1 位 alpha，所以工具走的是上面这三条真能用的路。
