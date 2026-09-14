@@ -402,6 +402,9 @@ input[type="range"]::-moz-range-thumb {
 
 /* ---------- 抠像工作区 ---------- */
 .ck-main { background: var(--bg-0); }
+.btn-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.btn-row button { flex: 1; min-width: 44px; padding: 5px 0; font-size: 12px; }
+.ck-fps { flex: 1; min-width: 44px; padding: 5px 0; font-size: 12px; }
 .ck-panel { width: 300px; flex: 0 0 300px; }
 .ck-panel .panel-body { flex: 1; }
 .ck-stage { background: var(--bg-0); }
@@ -757,6 +760,14 @@ input[type="range"]::-moz-range-thumb {
               <label>帧率</label><input type="number" id="ckFps" value="24" min="1" max="120">
               <label>抽帧</label><input type="number" id="ckStep" value="1" min="1" max="30">
             </div>
+            <div class="btn-row" style="margin-top:6px">
+              <button class="ck-fps" data-fps="30">30</button>
+              <button class="ck-fps" data-fps="24">24</button>
+              <button class="ck-fps" data-fps="15">15</button>
+              <button class="ck-fps" data-fps="12">12</button>
+              <button class="ck-fps" data-fps="8">8 fps</button>
+            </div>
+            <div class="hint">页游 / Web 逐帧动效常用 <b>8–12 fps</b>，点按钮一键设定。</div>
             <div class="row two">
               <label>起始</label><input type="number" id="ckStart" value="0" min="0" step="0.1">
               <label>结束</label><input type="number" id="ckEnd" value="0" min="0" step="0.1">
@@ -837,6 +848,16 @@ input[type="range"]::-moz-range-thumb {
                 <label>间距</label><input type="number" id="ckPad" value="0" min="0">
               </div>
               <div class="hint">列数填 <b>0</b> 自动排成接近正方形。</div>
+              <div class="row" style="margin-top:8px">
+                <label>坐标表</label>
+                <select id="ckMeta" style="flex:1">
+                  <option value="grid" selected>等分网格 JSON（自研·最小）</option>
+                  <option value="tp">TexturePacker JSON（通用）</option>
+                  <option value="both">两种都导出</option>
+                  <option value="none">不导出</option>
+                </select>
+              </div>
+              <div class="hint">引擎靠坐标表切帧，不用手数格子。自己撸 Canvas 用<b>等分网格</b>；换引擎/给同事用 <b>TexturePacker</b>。</div>
             </div>
             <div id="ckOptApng" style="display:none">
               <div class="row two">
@@ -2795,6 +2816,7 @@ hud('就绪 · 拖入 PNG 开始');
 
             /* ---- 阶段二：输出 ---- */
             let blob = null, ext = '.png', fname = '';
+            let metaOut = [], bigSide = 0;
             let nm = $('ckName').value.trim();
             if (!nm) nm = CK.name || 'chroma';
 
@@ -2827,6 +2849,54 @@ hud('就绪 · 拖入 PNG 开始');
                 ext = '.png';
                 fname = nm + '_sheet_' + cols + 'x' + rows + ext;
                 CK.lastFrameCanvas = sheet;
+                bigSide = Math.max(sheet.width, sheet.height);
+
+                /* ---- 坐标表（可选）---- */
+                const metaKind = $('ckMeta') ? $('ckMeta').value : 'none';
+                if (metaKind !== 'none' && metaKind !== undefined) {
+                    const fpsOut = Math.max(1, Math.round(1000 / delay));
+                    const base = fname.replace(/\.png$/i, '');
+                    const digits = Math.max(2, String(times.length).length);
+
+                    if (metaKind === 'grid' || metaKind === 'both') {
+                        metaOut.push({
+                            name: base + '.json',
+                            text: JSON.stringify({
+                                image: fname,
+                                frameW: ow, frameH: oh,
+                                pad: pad, stepX: cellW, stepY: cellH,
+                                cols: cols, rows: rows, count: times.length,
+                                fps: fpsOut, loop: true,
+                                origin: 'top-left',
+                                hint: 'x=(i%cols)*stepX  y=((i/cols)|0)*stepY  →  drawImage(img, x, y, frameW, frameH, dx, dy, dw, dh)'
+                            }, null, 2)
+                        });
+                    }
+                    if (metaKind === 'tp' || metaKind === 'both') {
+                        const fr = {};
+                        for (let i = 0; i < times.length; i++) {
+                            fr[nm + '_' + String(i).padStart(digits, '0')] = {
+                                frame: { x: (i % cols) * cellW, y: Math.floor(i / cols) * cellH, w: ow, h: oh },
+                                rotated: false, trimmed: false,
+                                spriteSourceSize: { x: 0, y: 0, w: ow, h: oh },
+                                sourceSize: { w: ow, h: oh },
+                                duration: Math.max(1, Math.round(delay))
+                            };
+                        }
+                        metaOut.push({
+                            name: base + '.tp.json',
+                            text: JSON.stringify({
+                                frames: fr,
+                                meta: {
+                                    app: 'AtlasStitcher', version: '1.2',
+                                    image: fname, format: 'RGBA8888',
+                                    size: { w: sheet.width, h: sheet.height },
+                                    scale: '1', fps: fpsOut
+                                }
+                            }, null, 2)
+                        });
+                    }
+                }
 
             } else if (fmt === 'seq') {
                 /* 序列帧 PNG → zip */
@@ -2896,11 +2966,20 @@ hud('就绪 · 拖入 PNG 开始');
             /* ---- 保存 ---- */
             setProg(1, '写入文件…');
             const dir = $('ckDir').value.trim();
-            const r = await savePng(blob, fname, dir || S.lastDir, $('ckOpen').checked);
+            const r = await savePng(blob, fname, dir || S.lastDir, $('ckOpen').checked && !metaOut.length);
             if (r.ok) {
-                toast('已导出：' + r.path, 3600);
-                hud('抠像导出成功 → ' + r.path);
-                setProg(1, '完成：' + r.path);
+                let extra = '';
+                for (const m of metaOut) {
+                    await new Promise(rr => setTimeout(rr, 220));
+                    const mr = await savePng(new Blob([m.text], { type: 'application/json' }), m.name, dir || S.lastDir, false);
+                    extra += '\n' + (mr && mr.ok ? '＋ ' : '✗ ') + m.name;
+                }
+                toast('已导出：' + r.path + extra, metaOut.length ? 5200 : 3600);
+                hud('抠像导出成功 → ' + r.path + (metaOut.length ? '（含坐标表 ×' + metaOut.length + '）' : ''));
+                setProg(1, '完成：' + r.path + (metaOut.length ? ' ＋ 坐标表' : ''));
+                if (bigSide > 2048) {
+                    toast('⚠ 图集 ' + bigSide + 'px 超过 2048，部分移动端 / GPU 可能白图。降帧率或尺寸上限可解决。', 6500);
+                }
             }
         } catch (e) {
             if (e.message === '__cancel__') { toast('已取消'); setProg(0, '已取消'); }
@@ -3031,6 +3110,21 @@ hud('就绪 · 拖入 PNG 开始');
             $('ckTimeVal').textContent = CK.curT.toFixed(2) + 's';
             schedulePreview(10);
         }
+
+        /* 帧率快捷预设 */
+        const fpsBtns = Array.prototype.slice.call(document.querySelectorAll('.ck-fps'));
+        function markFps(v) {
+            fpsBtns.forEach(b => b.classList.toggle('active', b.dataset.fps === String(v)));
+        }
+        fpsBtns.forEach(b => {
+            b.onclick = () => {
+                $('ckFps').value = b.dataset.fps;
+                markFps(b.dataset.fps);
+                if (CK.file) updateFrameCount();
+            };
+        });
+        $('ckFps').addEventListener('change', () => markFps(Math.round(+$('ckFps').value)));
+        markFps(Math.round(+$('ckFps').value));
 
         /* 输出参数 */
         $('ckCap').onchange = () => { if (CK.file) { resizeWork(); renderPreview(); } };
