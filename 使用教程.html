@@ -78,7 +78,7 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
     <h1>🧩 素材拼接器 <span>Atlas Stitcher</span> · 使用教程</h1>
     <p>两个页签：🧩 <b>素材拼接</b>（PNG 拼合导出）· 🎬 <b>视频抠像</b>（mp4 抠绿幕 → 带透明通道的雪碧图 / 序列帧 / APNG）。离线可用，无需安装。</p>
     <div class="badges">
-      <span class="badge">v1.1</span>
+      <span class="badge">v1.2</span>
       <span class="badge">Windows exe 14.5 MB</span>
       <span class="badge">单文件 HTML 140 KB</span>
       <span class="badge">无需联网</span>
@@ -193,10 +193,45 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
   勾选「统一裁剪到内容范围」后，所有帧会按统一的包围盒裁掉四周空白，雪碧图不浪费格子。
 </div>
 
+<h3 style="margin-top:20px">Sprite Sheet 坐标表（引擎靠它切帧）</h3>
+<p>选了 Sprite Sheet 后，右边会多出「坐标表」下拉。图集只是一张长图，<b>引擎靠这张表才知道第几帧在哪个位置</b>——导出时勾上就不用手数格子了。</p>
+<table>
+  <tr><th style="width:22%">选项</th><th style="width:26%">产物</th><th>什么时候选</th></tr>
+  <tr><td><b>等分网格 JSON</b><br><span style="color:var(--ink2)">（默认）</span></td><td><code>xxx.json</code>，约 300 B</td><td><b>自己写 Canvas / 自研引擎</b>。字段最少，帧坐标用公式算</td></tr>
+  <tr><td><b>TexturePacker JSON</b></td><td><code>xxx.tp.json</code></td><td><b>Phaser / PixiJS / Cocos / Unity 插件</b>通用的标准格式</td></tr>
+  <tr><td><b>两种都导出</b></td><td>上面两个都要</td><td>自己用一份，给同事或换引擎时留一份</td></tr>
+  <tr><td><b>不导出</b></td><td>只有 PNG</td><td>打算用引擎自带的图集工具重新切</td></tr>
+</table>
+
+<h4 style="margin:16px 0 6px">等分网格格式长这样</h4>
+<pre style="background:#f6f6f8;border:1px solid #e2e2e6;border-radius:6px;padding:11px 13px;overflow:auto;font-size:12.5px;line-height:1.55;margin:0"><code>{
+  "image":   "fountain_sheet_5x5.png",
+  "frameW": 533, "frameH": 243,
+  "pad": 0, "stepX": 533, "stepY": 243,
+  "cols": 5, "rows": 5, "count": 24,
+  "fps": 12, "loop": true,
+  "origin": "top-left"
+}</code></pre>
+<p style="margin:10px 0 0"><code>frameW/H</code> 是单帧尺寸，<code>stepX/Y</code> 是格子的步长（帧尺寸 + 间距）。切第 <code>i</code> 帧：</p>
+<pre style="background:#f6f6f8;border:1px solid #e2e2e6;border-radius:6px;padding:11px 13px;overflow:auto;font-size:12.5px;line-height:1.55;margin:8px 0 0"><code>const col = i % m.cols, row = (i / m.cols) | 0;
+ctx.drawImage(img,
+  col * m.stepX, row * m.stepY, m.frameW, m.frameH,     // 源：第 i 帧在图集哪
+  Math.round(x), Math.round(y), m.frameW, m.frameH);    // 目标：贴到屏幕哪</code></pre>
+
+<div class="warn" style="margin-top:12px">
+  <b>自己写播放器时记住三条：</b>
+  <ul style="margin:6px 0 0 18px">
+    <li><b>坐标要取整</b>（<code>Math.round</code>）：非整数坐标会触发重采样，又慢又糊。像素风再配 <code>ctx.imageSmoothingEnabled = false</code>。</li>
+    <li><b>别拿 requestAnimationFrame 的频率当帧率</b>：144 Hz 屏上动画会快 12 倍。用时间累加器推进帧号。</li>
+    <li><b>图集最长边别超 2048</b>：部分移动端 GPU 贴图上限就是它，超了可能整张白图。导入时降帧率或降尺寸上限即可。</li>
+  </ul>
+</div>
+
 <div class="warn">
   <b>几个要提醒的：</b>
   <ul style="margin:6px 0 0 18px">
     <li>帧数 = 帧率 × 时长 ÷ 抽帧，<b>48 帧 / 640×360 大约 600 KB</b>。帧数太多时先调大「抽帧」或压低「尺寸上限」。</li>
+    <li>「帧率」下面有一排 <b>30 / 24 / 15 / 12 / 8 fps</b> 快捷按钮，点一下就设好。<b>页游和网页逐帧动效常用 8–12 fps</b>，用 24 fps 导 48 帧纯属浪费——同一个素材 12 fps 只要 24 帧，图集还能小一半。</li>
     <li>Sprite Sheet 单张最长边超过 8192 px 会被拒，减帧数或降尺寸即可。</li>
     <li>浏览器只能解它自己支持的编码。<b>mp4 最好是 H.264</b>；碰到解不了的，先用格式工厂 / ffmpeg 转成 H.264 mp4 再丢进来。</li>
     <li>视频同样全程本地处理，不会上传。</li>
@@ -298,10 +333,11 @@ footer{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px}
   <tr><td><b>AtlasStitcher.exe</b></td><td>Windows 桌面版（14.5 MB），功能最全，支持指定目录导出</td></tr>
   <tr><td><b>素材拼接器_单文件版.html</b></td><td>离线单文件（73 KB），任何系统双击用浏览器打开即用</td></tr>
   <tr><td><b>使用教程.html</b></td><td>本文件</td></tr>
+  <tr><td><b>xxx.json / xxx.tp.json</b></td><td>Sprite Sheet 附带的坐标表（导出 Sprite Sheet 时可选），引擎按它切帧</td></tr>
   <tr><td><b>源码版/index.html / app.js / chroma.js / styles.css</b></td><td>未压缩源码，<code>chroma.js</code> 是视频抠像模块</td></tr>
 </table>
 
-<footer>素材拼接器 Atlas Stitcher v1.1 · 本地运行 · 无联网依赖</footer>
+<footer>素材拼接器 Atlas Stitcher v1.2 · 本地运行 · 无联网依赖</footer>
 </div>
 </body>
 </html>
